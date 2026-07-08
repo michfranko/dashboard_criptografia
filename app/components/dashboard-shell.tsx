@@ -9,6 +9,7 @@ const navItems = [
   { href: "/algoritmos", label: "Algoritmos" },
   { href: "/fuerza-bruta", label: "Fuerza bruta" },
   { href: "/probabilidad", label: "Probabilidad" },
+  { href: "/graficas", label: "Gráficas" },
   { href: "/simulacion", label: "Simulación" },
   { href: "/dataset", label: "Dataset" },
 ];
