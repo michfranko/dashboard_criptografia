@@ -5,7 +5,6 @@ const navItems = [
   { href: "/algoritmos", label: "Algoritmos" },
   { href: "/fuerza-bruta", label: "Fuerza bruta" },
   { href: "/probabilidad", label: "Probabilidad" },
-  { href: "/graficas", label: "Gráficas" },
   { href: "/simulacion", label: "Simulación" },
   { href: "/dataset", label: "Dataset" },
 ];
@@ -32,11 +31,6 @@ const modules = [
     title: "Laboratorio interactivo",
     description: "Simulación de cifrado, entropía y estimación de riesgo en tiempo real.",
     accent: "from-fuchsia-500/25 to-fuchsia-400/5",
-  },
-  {
-    title: "Gráficas explicativas",
-    description: "Visualizaciones de barras para resumir probabilidades, factores condicionales y tendencias del estudio.",
-    accent: "from-amber-500/25 to-amber-400/5",
   },
 ];
 

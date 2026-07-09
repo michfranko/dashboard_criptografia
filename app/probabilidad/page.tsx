@@ -5,7 +5,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
+  Pie,
+  PieChart,
   PolarAngleAxis,
   PolarGrid,
   PolarRadiusAxis,
@@ -39,6 +42,8 @@ const factorCandidates = [
   { label: "Longitud del hash", options: ["hash_length_crypto", "hash_length_attack", "hash_length"] },
   { label: "Espacio búsqueda", options: ["log2_search_space", "search_space"] },
 ];
+
+const DONUT_COLORS = ["#22d3ee", "#d946ef", "#10b981", "#f59e0b", "#ef4444", "#38bdf8"];
 
 function getCellValue(row: CsvRow, candidates: readonly string[]) {
   for (const candidate of candidates) {
@@ -186,7 +191,34 @@ export default function ProbabilidadPage() {
     };
   });
 
+  // Datos para la dona: media de cada algoritmo
+  const donutData = useMemo(() => {
+    return confidenceSeries
+      .filter(item => item.interval95 !== null)
+      .map((item, index) => ({
+        name: item.name,
+        value: Number(item.interval95!.mean.toFixed(4)),
+        fill: DONUT_COLORS[index % DONUT_COLORS.length],
+        lower: item.interval95!.lower,
+        upper: item.interval95!.upper,
+        samples: item.values.length,
+      }));
+  }, [confidenceSeries]);
+
   const customTooltipStyle = { contentStyle: { backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px" }, labelStyle: { color: "#fff", fontWeight: "bold" } };
+
+  const DonutTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number; lower: number; upper: number; samples: number } }> }) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    return (
+      <div className="rounded-xl border border-white/10 bg-slate-900 p-4 text-xs shadow-lg">
+        <p className="mb-2 font-semibold text-white">{d.name}</p>
+        <p className="text-slate-300">Media: <span className="text-cyan-200">{formatMetric(d.value, 5)}</span></p>
+        <p className="text-slate-300">IC 95%: [{formatMetric(d.lower, 5)}, {formatMetric(d.upper, 5)}]</p>
+        <p className="text-slate-400">Muestras: {d.samples}</p>
+      </div>
+    );
+  };
 
   return (
     <DashboardShell
@@ -270,31 +302,50 @@ export default function ProbabilidadPage() {
           </div>
         </VisualPanel>
 
-        <VisualPanel title="Intervalos de confianza" subtitle="Estimación probabilística de la media temporal">
-          <div className="mt-4 space-y-5">
-            {confidenceSeries.map((item) => (
-              <div key={item.name} className="rounded-xl bg-slate-900/50 p-4 border border-white/5">
-                <div className="mb-3 flex items-center justify-between text-sm">
-                  <span className={`font-bold ${item.accent}`}>{item.name}</span>
-                  <span className="text-slate-400">{item.values.length ? `${item.values.length} muestras` : "Sin datos"}</span>
-                </div>
-                {item.interval95 ? (
-                  <div className="space-y-3 text-xs text-slate-300 font-mono">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-1">
-                      <span>Nivel 95%</span>
-                      <span>[{formatMetric(item.interval95.lower, 5)} , {formatMetric(item.interval95.upper, 5)}]</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Nivel 99%</span>
-                      <span>[{formatMetric(item.interval99?.lower, 5)} , {formatMetric(item.interval99?.upper, 5)}]</span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-500">Muestras insuficientes para inferencia.</p>
-                )}
+        <VisualPanel title="Intervalos de confianza" subtitle="Comparación de medias por algoritmo (dona)">
+          {donutData.length > 0 ? (
+            <div className="flex flex-col items-center">
+              <div className="h-[260px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={100}
+                      paddingAngle={4}
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {donutData.map((entry, index) => (
+                        <Cell key={entry.name} fill={entry.fill} stroke="rgba(255,255,255,0.08)" />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<DonutTooltip />} />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={40}
+                      wrapperStyle={{ fontSize: '12px' }}
+                      formatter={(value: string) => <span className="text-slate-300">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+              <div className="mt-2 grid w-full grid-cols-3 gap-2 text-center text-xs text-slate-500">
+                {donutData.map((d) => (
+                  <div key={d.name}>
+                    <span className="block font-semibold text-white">{d.name}</span>
+                    <span>{formatMetric(d.value, 4)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-[260px] items-center justify-center text-sm text-slate-500">
+              {loading ? "Cargando datos..." : "No hay suficientes muestras para generar la dona."}
+            </div>
+          )}
         </VisualPanel>
       </div>
     </DashboardShell>
