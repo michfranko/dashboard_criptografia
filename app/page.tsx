@@ -6,39 +6,38 @@ const navItems = [
   { href: "/fuerza-bruta", label: "Fuerza bruta" },
   { href: "/probabilidad", label: "Probabilidad" },
   { href: "/simulacion", label: "Simulación" },
-  { href: "/dataset", label: "Dataset" },
 ];
 
 const kpis = [
   { label: "Algoritmos evaluados", value: "4", detail: "AES, MD5, RSA y SHA-256" },
-  { label: "Muestras históricas", value: "12.4K", detail: "Registros procesados desde CSV" },
-  { label: "Probabilidad promedio", value: "94%", detail: "Precisión de análisis estadístico" },
-  { label: "Tiempo de simulación", value: "< 2s", detail: "Respuesta en laboratorio en tiempo real" },
+  { label: "Registros procesados", value: "+13.5K", detail: "Métricas extraídas con Python" },
+  { label: "Arquitectura de datos", value: "JSON", detail: "Lectura estática de alta velocidad" },
+  { label: "Latencia del sistema", value: "0 ms", detail: "Renderizado instantáneo sin APIs" },
 ];
 
 const modules = [
   {
     title: "Análisis de algoritmos",
-    description: "Comparación de rendimiento, tamaño de salida y consumo de recursos.",
+    description: "Comparación de rendimiento, escalabilidad temporal y consumo de recursos de hardware.",
     accent: "from-cyan-500/25 to-cyan-400/5",
   },
   {
     title: "Ataques de fuerza bruta",
-    description: "Evaluación de complejidad, longitud y probabilidad de éxito por escenario.",
+    description: "Evaluación del coste computacional, intentos y tiempo de ruptura por escenario.",
     accent: "from-emerald-500/25 to-emerald-400/5",
   },
   {
-    title: "Laboratorio interactivo",
-    description: "Simulación de cifrado, entropía y estimación de riesgo en tiempo real.",
+    title: "Probabilidad y Entropía",
+    description: "Modelado estocástico, crecimiento exponencial y análisis del espacio de búsqueda.",
     accent: "from-fuchsia-500/25 to-fuchsia-400/5",
   },
 ];
 
 const stages = [
-  "Adquisición de datos",
-  "Procesamiento estadístico",
-  "Simulación de ataques",
-  "Visualización y conclusión",
+  "Extracción en Python",
+  "Exportación de Modelos",
+  "Lectura en Next.js",
+  "Visualización Analítica",
 ];
 
 const comparisons = [
@@ -51,7 +50,7 @@ const comparisons = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.15),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(192,132,252,0.16),_transparent_24%),linear-gradient(135deg,_#020617_0%,_#0f172a_45%,_#111827_100%)] text-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col lg:flex-row">
+      <div className="mx-auto flex min-h-screen w-[96%] max-w-[1800px] flex-col lg:flex-row">
         <aside className="w-full border-b border-white/10 bg-slate-950/70 px-5 py-6 backdrop-blur lg:w-72 lg:border-b-0 lg:border-r lg:px-6">
           <div className="rounded-2xl border border-cyan-400/20 bg-slate-900/80 p-4 shadow-[0_0_45px_rgba(34,211,238,0.08)]">
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/15 text-xl text-cyan-300">
@@ -82,11 +81,12 @@ export default function Home() {
             ))}
           </nav>
 
+          {/* Actualizamos el estado para reflejar la arquitectura JSON */}
           <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
-            <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">Estado</p>
-            <p className="mt-2 text-sm text-slate-200">Datos históricos cargados desde Google Drive.</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">Estado del Sistema</p>
+            <p className="mt-2 text-sm text-slate-200">Datos procesados localmente en tiempo real.</p>
             <div className="mt-3 h-2 rounded-full bg-slate-800">
-              <div className="h-2 w-4/5 rounded-full bg-emerald-400" />
+              <div className="h-2 w-full rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
             </div>
           </div>
         </aside>
@@ -99,8 +99,9 @@ export default function Home() {
                 Plataforma de análisis criptográfico y visualización de seguridad
               </h1>
             </div>
+            {/* Cambiamos la etiqueta de "En desarrollo" */}
             <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              Diseño inicial visual · En desarrollo
+              Laboratorio finalizado v1.0
             </div>
           </header>
 
@@ -110,7 +111,7 @@ export default function Home() {
                 <div>
                   <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">Inicio</p>
                   <h2 className="mt-2 text-2xl font-semibold text-white">
-                    Análisis y visualización de protocolos de seguridad
+                    Análisis y visualización de protocolos
                   </h2>
                 </div>
                 <div className="rounded-full border border-fuchsia-400/20 bg-fuchsia-400/10 px-3 py-1 text-sm text-fuchsia-200">
@@ -119,20 +120,20 @@ export default function Home() {
               </div>
 
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
-                Esta plataforma reúne experimentos, métricas, comparaciones y simulaciones para estudiar cómo los algoritmos criptográficos se comportan frente a ataques, variaciones estadísticas y condiciones reales de uso.
+                Esta plataforma reúne experimentos, métricas de hardware y simulaciones estadísticas para estudiar el comportamiento de los algoritmos criptográficos frente a ataques de fuerza bruta y medir su complejidad matemática (entropía).
               </p>
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
                   <p className="text-sm font-medium text-white">Objetivo</p>
                   <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Facilitar la comprensión visual de protocolos, tiempos de ejecución, entropía y riesgo estimado.
+                    Proporcionar un entorno visual para evaluar latencia operativa, consumo de CPU, RAM y riesgo estimado en cifrados.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="text-sm font-medium text-white">Enfoque</p>
+                  <p className="text-sm font-medium text-white">Arquitectura</p>
                   <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Integrar datos históricos desde CSV con una experiencia interactiva orientada a evaluación universitaria.
+                    Procesamiento de datos off-grid extraídos con Python y renderizados en React mediante estructuras JSON estáticas.
                   </p>
                 </div>
               </div>
@@ -158,8 +159,8 @@ export default function Home() {
             {[
               { label: "Protocolos analizados", value: "8" },
               { label: "Escenarios de ataque", value: "24" },
-              { label: "Intervalos de confianza", value: "95%" },
-              { label: "Visualizaciones", value: "12+" },
+              { label: "Arquitectura", value: "Next.js" },
+              { label: "Visualizaciones dinámicas", value: "12+" },
             ].map((item) => (
               <div key={item.label} className="rounded-[24px] border border-white/10 bg-slate-900/70 p-4">
                 <p className="text-sm text-slate-400">{item.label}</p>
@@ -173,10 +174,10 @@ export default function Home() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">Flujo del proyecto</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">De los datos experimentales a la conclusión visual</h3>
+                  <h3 className="mt-2 text-xl font-semibold text-white">De Python a Dashboard Interactivo</h3>
                 </div>
                 <div className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-sm text-slate-400">
-                  Pipeline académico
+                  Pipeline técnico
                 </div>
               </div>
 
@@ -193,7 +194,7 @@ export default function Home() {
             </div>
 
             <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-6 shadow-[0_0_60px_rgba(15,23,42,0.3)]">
-              <p className="text-sm uppercase tracking-[0.35em] text-fuchsia-300">Comparativa rápida</p>
+              <p className="text-sm uppercase tracking-[0.35em] text-fuchsia-300">Comparativa de Seguridad (Teórica)</p>
               <div className="mt-5 space-y-4">
                 {comparisons.map((item) => (
                   <div key={item.name}>
@@ -214,7 +215,7 @@ export default function Home() {
             {modules.map((module) => (
               <div key={module.title} className={`rounded-[28px] border border-white/10 bg-gradient-to-br ${module.accent} p-[1px]`}>
                 <div className="h-full rounded-[27px] bg-slate-950/90 p-5">
-                  <p className="text-sm uppercase tracking-[0.35em] text-slate-400">Módulo</p>
+                  <p className="text-sm uppercase tracking-[0.35em] text-slate-400">Módulo Analítico</p>
                   <h3 className="mt-3 text-xl font-semibold text-white">{module.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-slate-400">{module.description}</p>
                 </div>

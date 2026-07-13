@@ -1,4 +1,4 @@
-export interface CsvRow {
+/*export interface CsvRow {
   [key: string]: string;
 }
 
@@ -275,3 +275,4 @@ export async function fetchDriveCsvs(sourceMap: Record<string, string | undefine
     results.map(([key, data, error]) => [key, { data, error }]),
   ) as Record<string, { data: CsvData | null; error: string | null }>;
 }
+*/

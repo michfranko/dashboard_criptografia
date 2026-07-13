@@ -1,4 +1,4 @@
-"use client";
+/*"use client";
 
 import { useEffect, useState, type ChangeEvent } from "react";
 import { getConfiguredDriveSources, saveDriveSourceConfig, type DriveSourceMap } from "../lib/csv-analytics";
@@ -64,4 +64,4 @@ export default function DriveSourceConfig() {
       </div>
     </div>
   );
-}
+}*/

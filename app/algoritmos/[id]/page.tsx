@@ -1,4 +1,4 @@
-"use client";
+/*"use client";
 
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -75,7 +75,6 @@ export default function AlgoritmoDetallePage() {
         <div className="p-5 text-rose-300">No se encontraron datos para {algoritmoId}. Verifica las fuentes en Dataset.</div>
       ) : (
         <div className="space-y-6">
-          {/* Fila 1: KPIs de Alto Nivel */}
           <div className="grid gap-4 md:grid-cols-4">
             <MetricCard label="Total Muestras" value={String(csvData.rows.length)} detail="Registros en CSV" accent="text-white" />
             <MetricCard label="Comportamiento" value={algoritmoId === "MD5" || algoritmoId.includes("SHA") ? "Hashing" : "Cifrado"} detail="Tipo de operación" accent="text-cyan-200" />
@@ -83,7 +82,6 @@ export default function AlgoritmoDetallePage() {
             <MetricCard label="Estabilidad" value="98.5%" detail="Coeficiente de variación" accent="text-fuchsia-200" />
           </div>
 
-          {/* Fila 2: Gráficos de Profundidad (Como tu imagen de referencia) */}
           <div className="grid gap-6 xl:grid-cols-2">
             <VisualPanel title="Escalabilidad" subtitle="Tamaño de entrada vs. Tiempo de ejecución">
               <div className="h-[300px] w-full mt-4">
@@ -122,7 +120,6 @@ export default function AlgoritmoDetallePage() {
             </VisualPanel>
           </div>
 
-          {/* Fila 3: Tabla de datos duros (Crucial en dashboards analíticos) */}
           <VisualPanel title="Auditoría de Muestras" subtitle="Top 5 registros más costosos computacionalmente">
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-300">
@@ -134,7 +131,6 @@ export default function AlgoritmoDetallePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {/* Simulamos tomar los 5 más lentos */}
                   {csvData.rows.slice(0, 5).map((row, i) => (
                     <tr key={i} className="hover:bg-slate-800/20">
                       <td className="px-4 py-3">{row.data_size_bytes || row.input_length || "N/A"}</td>
@@ -150,4 +146,4 @@ export default function AlgoritmoDetallePage() {
       )}
     </DashboardShell>
   );
-}
+}*/

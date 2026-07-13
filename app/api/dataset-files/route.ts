@@ -1,4 +1,4 @@
-import { promises as fs } from "fs";
+/*import { promises as fs } from "fs";
 import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -147,4 +147,4 @@ export async function GET(request: NextRequest) {
     source: "none",
     message: message ?? "No se encontraron archivos CSV.",
   });
-}
+}*/

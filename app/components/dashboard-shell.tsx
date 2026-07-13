@@ -10,7 +10,7 @@ const navItems = [
   { href: "/fuerza-bruta", label: "Fuerza bruta" },
   { href: "/probabilidad", label: "Probabilidad" },
   { href: "/simulacion", label: "Simulación" },
-  { href: "/dataset", label: "Dataset" },
+  //{ href: "/dataset", label: "Dataset" },
 ];
 
 type DashboardShellProps = {
@@ -32,7 +32,7 @@ export default function DashboardShell({
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.15),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(192,132,252,0.16),_transparent_24%),linear-gradient(135deg,_#020617_0%,_#0f172a_45%,_#111827_100%)] text-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col lg:flex-row">
+      <div className="mx-auto flex min-h-screen w-[96%] max-w-[1800px] flex-col lg:flex-row">
         <aside className="w-full border-b border-white/10 bg-slate-950/70 px-5 py-6 backdrop-blur lg:w-72 lg:border-b-0 lg:border-r lg:px-6">
           <div className="rounded-2xl border border-cyan-400/20 bg-slate-900/80 p-4 shadow-[0_0_45px_rgba(34,211,238,0.08)]">
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/15 text-xl text-cyan-300">
@@ -65,14 +65,6 @@ export default function DashboardShell({
               );
             })}
           </nav>
-
-          <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
-            <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">Estado</p>
-            <p className="mt-2 text-sm text-slate-200">Datos históricos cargados desde Google Drive.</p>
-            <div className="mt-3 h-2 rounded-full bg-slate-800">
-              <div className="h-2 w-4/5 rounded-full bg-emerald-400" />
-            </div>
-          </div>
         </aside>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">

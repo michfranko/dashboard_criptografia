@@ -1,353 +1,290 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
+// IMPORTACIÓN NATIVA DEL JSON
+import probabilitiesRawData from "../data/probabilities.json";
+
 import DashboardShell from "../components/dashboard-shell";
 import MetricCard from "../components/metric-card";
 import VisualPanel from "../components/visual-panel";
-import {
-  buildHistogram,
-  DRIVE_SOURCE_UPDATE_EVENT,
-  fetchDriveCsvs,
-  formatMetric,
-  getConfiguredDriveSources,
-  summarizeNumeric,
-  type CsvData,
-  type CsvRow,
-} from "../lib/csv-analytics";
 
-const entropyCandidates = ["log2_search_space", "bits_entropia", "entropia", "entropy"];
-const successCandidates = ["attack_successful", "success", "prob_success", "success_rate", "attack_success"];
-const failureCandidates = ["failure", "prob_failure", "failure_rate", "attack_failure"];
-const factorCandidates = [
-  { label: "Tamaño de clave", options: ["key_size_bits", "key_bits", "key_length_bits", "keysize_bits"] },
-  { label: "Texto plano", options: ["password_length", "plaintext_length", "original_text", "input_length"] },
-  { label: "Longitud del hash", options: ["hash_length_crypto", "hash_length_attack", "hash_length"] },
-  { label: "Espacio búsqueda", options: ["log2_search_space", "search_space"] },
-];
+// 1. Buscador profundo universal (Ahora etiqueta el algoritmo automáticamente)
+function extractProbabilityRows(jsonData: any): any[] {
+  let records: any[] = [];
+  if (!jsonData) return records;
 
-const DONUT_COLORS = ["#22d3ee", "#d946ef", "#10b981", "#f59e0b", "#ef4444", "#38bdf8"];
+  function findDataArray(obj: any) {
+    if (!obj || typeof obj !== "object") return;
 
-function getCellValue(row: CsvRow, candidates: readonly string[]) {
-  for (const candidate of candidates) {
-    const value = row[candidate];
-    if (value !== undefined && value !== null && String(value).trim() !== "") {
-      return String(value).trim();
+    for (const key of Object.keys(obj)) {
+      const value = obj[key];
+      if (Array.isArray(value) && value.length > 0 && typeof value[0] === "object" && value[0] !== null) {
+        if ("log2_search_space" in value[0] || "search_space" in value[0] || "key_size_bits" in value[0]) {
+          
+          // Etiquetado Inteligente de Algoritmo
+          const taggedData = value.map((r: any) => {
+            let algoRaw = String(r.algorithm || r.algoritmo || "General").toUpperCase();
+            // Normalizamos nombres
+            if (algoRaw.includes("SHA-256")) algoRaw = "SHA-256";
+            else if (algoRaw.includes("AES")) algoRaw = "AES";
+            else if (algoRaw.includes("RSA")) algoRaw = "RSA";
+            else if (algoRaw.includes("MD5")) algoRaw = "MD5";
+            
+            return { ...r, _algo: algoRaw };
+          });
+          
+          records = [...records, ...taggedData];
+        }
+      }
+    }
+
+    if (Array.isArray(obj)) {
+      for (const item of obj) findDataArray(item);
+    } else {
+      for (const key of Object.keys(obj)) findDataArray(obj[key]);
     }
   }
-  return null;
+
+  findDataArray(jsonData);
+  return records;
 }
 
-function parseNumericValue(value: string | null | undefined): number | null {
-  if (value === null || value === undefined) return null;
-  const normalized = value.trim().replaceAll(",", ".");
-  if (!normalized) return null;
-  const lowered = normalized.toLowerCase();
-  if (lowered === "true") return 1;
-  if (lowered === "false") return 0;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
-}
+const formatMetric = (value: number | null, decimals: number = 2) => {
+  if (value === null || !Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: decimals }).format(value);
+};
 
-function parseProbabilityValue(value: string | null | undefined): number | null {
-  const parsed = parseNumericValue(value);
-  if (parsed === null) return null;
-  return parsed > 1 ? parsed / 100 : parsed;
-}
-
-function matchesAlgorithm(row: CsvRow, algorithm: string) {
-  const value = getCellValue(row, ["algorithm", "algoritmo", "algo", "cipher", "name", "method"]);
-  if (!value) return false;
-  const normalized = value.toLowerCase();
-  if (algorithm === "MD5") return normalized.includes("md5");
-  if (algorithm === "RSA") return normalized.includes("rsa");
-  if (algorithm === "AES") return normalized.includes("aes");
-  if (algorithm === "SHA-256") return normalized.includes("sha256") || normalized.includes("sha-256");
-  return normalized.includes(algorithm.toLowerCase());
-}
-
-function computeConfidenceInterval(values: number[], confidence: number) {
-  if (values.length < 2) return null;
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
-  const stdDev = Math.sqrt(variance);
-  let zScore = 2.576;
-  if (confidence >= 0.95 && confidence < 0.99) zScore = 1.96;
-  else if (confidence >= 0.9 && confidence < 0.95) zScore = 1.645;
-  const margin = (stdDev / Math.sqrt(values.length)) * zScore;
-  return { mean, lower: mean - margin, upper: mean + margin };
-}
+const formatScientific = (value: number | null) => {
+  if (value === null || !Number.isFinite(value) || value === 0) return "0";
+  if (value < 1000000) return new Intl.NumberFormat("en-US").format(value);
+  return value.toExponential(2).replace("e+", " x 10^");
+};
 
 export default function ProbabilidadPage() {
-  const [csvData, setCsvData] = useState<Record<string, { data: CsvData | null; error: string | null }>>({});
-  const [loading, setLoading] = useState(true);
-  const sourceMap = useMemo(() => getConfiguredDriveSources(), []);
+  const [activeTab, setActiveTab] = useState("General");
+  const tabs = ["General", "AES", "RSA", "MD5", "SHA-256"];
 
-  useEffect(() => {
-    let active = true;
-    async function loadData() {
-      setLoading(true);
-      const results = await fetchDriveCsvs({
-        vulnerability: sourceMap.vulnerability,
-      });
-      if (active) setCsvData(results);
-    }
-    const handleSourcesUpdated = () => void loadData();
-    void loadData().finally(() => { if (active) setLoading(false); });
-    window.addEventListener(DRIVE_SOURCE_UPDATE_EVENT, handleSourcesUpdated);
-    return () => {
-      active = false;
-      window.removeEventListener(DRIVE_SOURCE_UPDATE_EVENT, handleSourcesUpdated);
-    };
-  }, [sourceMap.vulnerability]);
+  const allRows = useMemo(() => extractProbabilityRows(probabilitiesRawData), []);
 
-  // Todo se lee de vulnerabilityRows porque tu archivo "integrated_analysis_df.csv" tiene todos los datos consolidados
-  const vulnerabilityRows = csvData.vulnerability?.data?.rows ?? [];
-  const entropySummary = summarizeNumeric(vulnerabilityRows, entropyCandidates);
-  
-  // SOLUCIÓN 1: Histograma dinámico que lee correctamente el log2_search_space
-  const histogram = useMemo(() => {
-    const values = vulnerabilityRows
-      .map((row) => parseNumericValue(getCellValue(row, entropyCandidates)))
-      .filter((value): value is number => value !== null);
+  // 2. Filtramos los datos según la pestaña activa
+  // Reemplaza esta sección de filteredRows por esta versión blindada
+  const filteredRows = useMemo(() => {
+    if (activeTab === "General") return allRows;
     
-    const rawHist = values.length > 0 ? buildHistogram(values, 8) : [];
-    return rawHist.map(b => ({ Rango: b.label, Frecuencia: b.count }));
-  }, [vulnerabilityRows]);
-
-  const hasConfiguredSources = Boolean(sourceMap.vulnerability);
-
-  const probabilityChartData = useMemo(() => {
-    return ["AES", "RSA", "SHA-256", "MD5"].map((algorithm) => {
-      const rows = vulnerabilityRows.filter((row) => matchesAlgorithm(row, algorithm));
-      const successValues = rows.map((row) => parseProbabilityValue(getCellValue(row, successCandidates))).filter((v): v is number => v !== null);
-      let successRate = successValues.length ? successValues.reduce((sum, v) => sum + v, 0) / successValues.length : 0;
+    // Normalizamos el nombre del tab y el del registro para comparar sin errores
+    const tabName = activeTab.toLowerCase(); 
+    return allRows.filter((r) => {
+      const algoName = String(r._algo || "").toLowerCase();
+      // Si el tab es SHA-256, buscamos cualquier cosa que sea SHA
+      if (tabName === "sha-256") return algoName.includes("sha");
       
-      if (successRate === 0 && rows.length > 0) {
-        const successful = rows.filter(r => String(r.attack_successful).toLowerCase() === 'true' || String(r.success).toLowerCase() === 'true' || String(r.attack_successful) === '1').length;
-        if (successful > 0) successRate = successful / rows.length;
-      }
-      
-      if (rows.length === 0) {
-          if (algorithm === "MD5") successRate = 0.65;
-          if (algorithm === "SHA-256") successRate = 0.30;
-      }
-
-      return {
-        algoritmo: algorithm,
-        Éxito: Number((successRate * 100).toFixed(1)),
-        Fracaso: Number(((1 - successRate) * 100).toFixed(1)),
-      };
+      return algoName === tabName;
     });
-  }, [vulnerabilityRows]);
+  }, [allRows, activeTab]);
 
-  const factorRadarData = useMemo(() => {
-    return factorCandidates.map((factor) => {
-      const values = vulnerabilityRows.map((row) => parseNumericValue(getCellValue(row, factor.options))).filter((v): v is number => v !== null);
-      const avg = values.length ? values.reduce((sum, entry) => sum + entry, 0) / values.length : (factor.label === "Espacio búsqueda" ? 100 : 50);
-      return {
-        factor: factor.label,
-        Impacto: Number(Math.min(100, avg > 1000 ? avg / 1e12 : avg).toFixed(1))
-      };
-    }).filter(f => f.Impacto > 0);
-  }, [vulnerabilityRows]);
+  const getBestValue = (row: any, candidates: string[]): number => {
+    for (const key of candidates) {
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") {
+        const num = Number(row[key]);
+        if (!isNaN(num)) return num;
+      }
+    }
+    return 0;
+  };
 
-  const searchSpaceData = [
-    { name: "MD5", bits: 128 },
-    { name: "AES-128", bits: 128 },
-    { name: "AES-256", bits: 256 },
-    { name: "RSA-2048", bits: 2048 },
-  ];
+  // 3. Cálculos Dinámicos de Tarjetas
+  const metricsSummary = useMemo(() => {
+    if (filteredRows.length === 0) return { maxEntropy: 0, avgSpace: 0, maxAttempts: 0 };
 
-  // SOLUCIÓN 2: Extraer los tiempos directamente desde el archivo integrado filtrando por algoritmo
-  const confidenceSeries = [
-    { name: "AES", rows: vulnerabilityRows.filter(r => matchesAlgorithm(r, "AES")), candidates: ["execution_time_crypto", "execution_time_attack", "execution_time"], accent: "text-cyan-400" },
-    { name: "RSA", rows: vulnerabilityRows.filter(r => matchesAlgorithm(r, "RSA")), candidates: ["execution_time_crypto", "execution_time_attack", "execution_time"], accent: "text-fuchsia-400" },
-    { name: "MD5", rows: vulnerabilityRows.filter(r => matchesAlgorithm(r, "MD5")), candidates: ["execution_time_crypto", "execution_time_attack", "execution_time"], accent: "text-emerald-400" },
-  ].map((item) => {
-    const values = item.rows.map((row) => parseNumericValue(getCellValue(row, item.candidates))).filter((v): v is number => v !== null);
+    let maxEntropy = 0;
+    let totalSpace = 0;
+    let maxAttempts = 0;
+    let validSpaceCount = 0;
+
+    filteredRows.forEach((r: any) => {
+      const entropy = getBestValue(r, ["log2_search_space", "entropy"]);
+      let space = getBestValue(r, ["search_space", "combinations"]);
+      const attempts = getBestValue(r, ["attempts", "total_attempts"]);
+
+      if (entropy > maxEntropy) maxEntropy = entropy;
+      if (attempts > maxAttempts) maxAttempts = attempts;
+      
+      if ((space === 0 || space === null) && entropy > 0) {
+        space = Math.pow(2, entropy);
+      }
+
+      if (space > 0) {
+        totalSpace += space;
+        validSpaceCount++;
+      }
+    });
+
     return {
-      ...item,
-      values,
-      interval95: computeConfidenceInterval(values, 0.95),
-      interval99: computeConfidenceInterval(values, 0.99),
+      maxEntropy,
+      avgSpace: validSpaceCount > 0 ? totalSpace / validSpaceCount : 0,
+      maxAttempts,
     };
-  });
+  }, [filteredRows]);
 
-  // Datos para la dona: media de cada algoritmo
-  const donutData = useMemo(() => {
-    return confidenceSeries
-      .filter(item => item.interval95 !== null)
-      .map((item, index) => ({
-        name: item.name,
-        value: Number(item.interval95!.mean.toFixed(4)),
-        fill: DONUT_COLORS[index % DONUT_COLORS.length],
-        lower: item.interval95!.lower,
-        upper: item.interval95!.upper,
-        samples: item.values.length,
-      }));
-  }, [confidenceSeries]);
+  // 4. Agrupación y Limpieza Matemática
+  const chartData = useMemo(() => {
+    const grouped = new Map<number, { entropy: number[]; space: number[]; attempts: number[] }>();
 
-  const customTooltipStyle = { contentStyle: { backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px" }, labelStyle: { color: "#fff", fontWeight: "bold" } };
+    filteredRows.forEach((r: any) => {
+      let groupKeyRaw = getBestValue(r, ["key_size_bits", "password_length", "plaintext_length"]);
+      
+      // LIMPIEZA: Si el eje X trae números raros, los redondeamos a enteros limpios
+      let groupKey = groupKeyRaw > 0 ? Math.round(groupKeyRaw) : 0; 
+      
+      let entropy = getBestValue(r, ["log2_search_space", "entropy"]);
+      let space = getBestValue(r, ["search_space", "combinations"]);
+      const attempts = getBestValue(r, ["attempts", "execution_time_attack"]);
 
-  const DonutTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; value: number; lower: number; upper: number; samples: number } }> }) => {
-    if (!active || !payload?.length) return null;
-    const d = payload[0].payload;
-    return (
-      <div className="rounded-xl border border-white/10 bg-slate-900 p-4 text-xs shadow-lg">
-        <p className="mb-2 font-semibold text-white">{d.name}</p>
-        <p className="text-slate-300">Media: <span className="text-cyan-200">{formatMetric(d.value, 5)}</span></p>
-        <p className="text-slate-300">IC 95%: [{formatMetric(d.lower, 5)}, {formatMetric(d.upper, 5)}]</p>
-        <p className="text-slate-400">Muestras: {d.samples}</p>
-      </div>
-    );
+      if ((space === 0 || space === null) && entropy > 0) {
+        space = Math.pow(2, entropy);
+      }
+
+      if (groupKey > 0) {
+        if (!grouped.has(groupKey)) {
+          grouped.set(groupKey, { entropy: [], space: [], attempts: [] });
+        }
+        const current = grouped.get(groupKey)!;
+        if (entropy > 0) current.entropy.push(entropy);
+        if (space > 0) current.space.push(space);
+        if (attempts > 0) current.attempts.push(attempts);
+      }
+    });
+
+    return Array.from(grouped.entries())
+      .map(([longitud, item]) => {
+        const avgEntropy = item.entropy.length ? item.entropy.reduce((a, b) => a + b, 0) / item.entropy.length : 0;
+        const avgSpace = item.space.length ? item.space.reduce((a, b) => a + b, 0) / item.space.length : 0;
+        const avgAttempts = item.attempts.length ? item.attempts.reduce((a, b) => a + b, 0) / item.attempts.length : 0;
+
+        return {
+          longitud, // Ahora será un número entero limpio (Ej: 128, 256, 2048)
+          Entropia: Number(avgEntropy.toFixed(2)),
+          Combinaciones: avgSpace,
+          Intentos: avgAttempts,
+        };
+      })
+      .sort((a, b) => a.longitud - b.longitud);
+  }, [filteredRows]);
+
+  const customTooltipStyle = {
+    contentStyle: { backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px" },
+    labelStyle: { color: "#fff", fontWeight: "bold" },
   };
 
   return (
     <DashboardShell
       eyebrow="Módulo académico"
-      title="Análisis probabilístico y estadístico"
-      description="Se integran conceptos de probabilidad, distribución, entropía y correlación para interpretar la viabilidad de los ataques criptográficos."
-      badge="Análisis estadístico"
+      title="Análisis de Probabilidad y Entropía"
+      description="Evaluación estocástica del espacio de búsqueda y el crecimiento exponencial de la seguridad criptográfica."
+      badge="Estadística Matemática"
     >
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <VisualPanel title="Métricas" subtitle="Resumen estadístico">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <MetricCard label="Entropía media" value={entropySummary ? `${formatMetric(entropySummary.average)} bits` : "—"} detail="Promedio de los registros" accent="text-emerald-200" />
-            <MetricCard label="Varianza" value={entropySummary ? formatMetric(entropySummary.average !== null && entropySummary.count > 0 ? (entropySummary.average ** 2) / Math.max(1, entropySummary.count) : null) : "—"} detail="Medida de dispersión" accent="text-cyan-200" />
-            <MetricCard label="Desv. estándar" value={entropySummary ? `${formatMetric(entropySummary.stdDev)} bits` : "—"} detail="Dispersion del conjunto" accent="text-fuchsia-200" />
-            <MetricCard label="Distribuciones" value={hasConfiguredSources ? "Activas" : "Sin datos"} detail="Calculadas desde CSV" accent="text-amber-200" />
-          </div>
-        </VisualPanel>
+      {/* Botones de Filtro Dinámico */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${
+              activeTab === tab
+                ? "bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]"
+                : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-        <VisualPanel title="Distribución de Entropía" subtitle="Frecuencia por rangos de complejidad">
-            <div className="mt-2 h-[220px] w-full">
-              {histogram.length > 0 ? (
+      {/* Tarjetas Métricas */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <MetricCard label="Registros Analizados" value={filteredRows.length > 0 ? String(filteredRows.length) : "0"} detail={activeTab === "General" ? "Vectores procesados globales" : `Métricas de ${activeTab}`} accent="text-white" />
+        <MetricCard label="Entropía Máxima" value={metricsSummary.maxEntropy > 0 ? `${formatMetric(metricsSummary.maxEntropy)} bits` : "0 bits"} detail="Nivel máximo de incertidumbre (log2)" accent="text-fuchsia-300" />
+        <MetricCard label="Espacio de Búsqueda Medio" value={metricsSummary.avgSpace > 0 ? formatScientific(metricsSummary.avgSpace) : "0"} detail="Combinaciones posibles calculadas" accent="text-cyan-300" />
+        <MetricCard label="Pico de Dificultad Registrado" value={metricsSummary.maxAttempts > 0 ? formatScientific(metricsSummary.maxAttempts) : "0"} detail="Peor escenario computacional" accent="text-rose-300" />
+      </div>
+
+      {/* Gráficos Estadísticos */}
+      {chartData.length > 0 ? (
+        <div className="mt-6 space-y-6">
+          <div className="grid gap-6 xl:grid-cols-2">
+            
+            {/* Gráfico 1: Entropía */}
+            <VisualPanel title="Crecimiento de Entropía" subtitle="Incertidumbre (Bits) vs Dimensión de la clave">
+              <div className="mt-4 h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={histogram} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorEntropy" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#d946ef" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#d946ef" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="Rango" stroke="#94a3b8" fontSize={11} />
+                    <XAxis dataKey="longitud" stroke="#94a3b8" fontSize={11} name="Dimensión" />
                     <YAxis stroke="#94a3b8" fontSize={11} />
-                    <Tooltip {...customTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                    <Bar dataKey="Frecuencia" fill="#22d3ee" radius={[4, 4, 0, 0]} />
+                    <Tooltip {...customTooltipStyle} formatter={(value) => [`${value} bits`, "Entropía"]} labelFormatter={(label) => `Dimensión Base: ${label}`} />
+                    <Area type="monotone" dataKey="Entropia" stroke="#d946ef" fillOpacity={1} fill="url(#colorEntropy)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </VisualPanel>
+
+            {/* Gráfico 2: Combinaciones */}
+            <VisualPanel title="Explosión Combinatoria Real" subtitle="Total de combinaciones posibles calculadas en el espacio de búsqueda">
+              <div className="mt-4 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="longitud" stroke="#94a3b8" fontSize={11} />
+                    <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => val.toExponential(1)} />
+                    <Tooltip {...customTooltipStyle} formatter={(value) => [formatScientific(Number(value)), "Combinaciones"]} labelFormatter={(label) => `Dimensión Base: ${label}`} />
+                    <Bar dataKey="Combinaciones" fill="#06b6d4" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-slate-500">Cargando histograma...</div>
-              )}
-            </div>
-            <p className="mt-2 text-xs text-center text-slate-500">Los picos muestran en qué rango de entropía cayeron la mayoría de los ataques del experimento.</p>
-        </VisualPanel>
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <VisualPanel title="Probabilidades" subtitle="Tasa de Éxito vs Fracaso (Fuerza Bruta)">
-          <div className="mt-2 h-[260px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={probabilityChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="algoritmo" stroke="#94a3b8" fontSize={12} />
-                <YAxis unit="%" stroke="#94a3b8" fontSize={12} />
-                <Tooltip {...customTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '13px' }} />
-                <Bar dataKey="Éxito" fill="#ef4444" radius={[4, 4, 0, 0]} name="Ataque Exitoso (%)" />
-                <Bar dataKey="Fracaso" fill="#10b981" radius={[4, 4, 0, 0]} name="Ataque Fallido (%)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </VisualPanel>
-
-        <VisualPanel title="Factores condicionales" subtitle="Impacto de variables en el riesgo">
-          <div className="mt-2 flex h-[260px] w-full justify-center">
-             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={factorRadarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                <PolarAngleAxis dataKey="factor" stroke="#94a3b8" fontSize={11} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="Impacto Estocástico" dataKey="Impacto" stroke="#d946ef" fill="#d946ef" fillOpacity={0.4} />
-                <Tooltip {...customTooltipStyle} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </VisualPanel>
-
-        <VisualPanel title="Espacio de búsqueda" subtitle="Crecimiento exponencial teórico (Log2)">
-           <div className="mt-2 h-[260px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={searchSpaceData} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={true} vertical={false} />
-                <XAxis type="number" stroke="#94a3b8" fontSize={11} />
-                <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} width={70} />
-                <Tooltip {...customTooltipStyle} formatter={(value) => [`2^${value} bits`, "Complejidad"]} />
-                <Bar dataKey="bits" fill="#38bdf8" radius={[0, 4, 4, 0]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </VisualPanel>
-
-        <VisualPanel title="Intervalos de confianza" subtitle="Comparación de medias por algoritmo (dona)">
-          {donutData.length > 0 ? (
-            <div className="flex flex-col items-center">
-              <div className="h-[260px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={donutData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={100}
-                      paddingAngle={4}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {donutData.map((entry, index) => (
-                        <Cell key={entry.name} fill={entry.fill} stroke="rgba(255,255,255,0.08)" />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<DonutTooltip />} />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={40}
-                      wrapperStyle={{ fontSize: '12px' }}
-                      formatter={(value: string) => <span className="text-slate-300">{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
               </div>
-              <div className="mt-2 grid w-full grid-cols-3 gap-2 text-center text-xs text-slate-500">
-                {donutData.map((d) => (
-                  <div key={d.name}>
-                    <span className="block font-semibold text-white">{d.name}</span>
-                    <span>{formatMetric(d.value, 4)}</span>
-                  </div>
-                ))}
-              </div>
+            </VisualPanel>
+          </div>
+
+          {/* Gráfico 3: Intentos / Coste */}
+          <VisualPanel title="Análisis de Esfuerzo de Fractura" subtitle="Carga computacional o coste estocástico de simulación">
+            <div className="mt-4 h-[240px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 10, right: 20, left: 15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="longitud" stroke="#94a3b8" fontSize={11} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => val.toExponential(1)} />
+                  <Tooltip {...customTooltipStyle} formatter={(value) => [formatScientific(Number(value)), "Métrica de Esfuerzo"]} labelFormatter={(label) => `Dimensión Base: ${label}`} />
+                  <Line type="monotone" dataKey="Intentos" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
-          ) : (
-            <div className="flex h-[260px] items-center justify-center text-sm text-slate-500">
-              {loading ? "Cargando datos..." : "No hay suficientes muestras para generar la dona."}
-            </div>
-          )}
-        </VisualPanel>
-      </div>
+          </VisualPanel>
+        </div>
+      ) : (
+        <div className="mt-6 flex h-[300px] items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-slate-900/70 text-slate-400">
+          No se encontraron métricas de probabilidad para el filtro seleccionado.
+        </div>
+      )}
     </DashboardShell>
   );
 }

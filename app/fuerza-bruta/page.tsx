@@ -1,276 +1,243 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
-  Scatter,
-  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
+import attacksRawData from "../data/attacks.json";
 import DashboardShell from "../components/dashboard-shell";
 import MetricCard from "../components/metric-card";
 import VisualPanel from "../components/visual-panel";
-import {
-  DRIVE_SOURCE_UPDATE_EVENT,
-  fetchDriveCsvs,
-  formatMetric,
-  getConfiguredDriveSources,
-  summarizeNumeric,
-  type CsvData,
-  type CsvRow,
-} from "../lib/csv-analytics";
 
-// Configuración de columnas candidatas según tu archivo integrado
-const lengthCandidates = ["password_length", "plaintext_length", "input_length"];
-const timeCandidates = ["attack_time_seconds", "execution_time_attack", "execution_time"];
-const attemptsCandidates = ["attempts", "total_attempts"];
-const speedCandidates = ["attempts_per_second", "throughput_attack"];
+function extractAttacksData(jsonData: any): any[] {
+  let records: any[] = [];
+  if (!jsonData) return records;
 
-function getCellValue(row: CsvRow, candidates: readonly string[]) {
-  for (const candidate of candidates) {
-    const value = row[candidate];
-    if (value !== undefined && value !== null && String(value).trim() !== "") {
-      return String(value).trim();
+  for (const algoName of Object.keys(jsonData)) {
+    const algoData = jsonData[algoName];
+    const normalizedAlgoName = algoName.toUpperCase().replace("SHA256", "SHA-256").replace("SHA", "SHA-256");
+
+    function findDataArray(obj: any) {
+      if (!obj || typeof obj !== "object") return;
+      for (const key of Object.keys(obj)) {
+        const value = obj[key];
+        if (Array.isArray(value) && value.length > 0 && typeof value[0] === "object" && value[0] !== null) {
+          if ("time_to_crack_seconds" in value[0] || "attempts" in value[0] || "attempts_per_second" in value[0]) {
+            const taggedData = value.map((r) => ({ ...r, _algo: normalizedAlgoName }));
+            records = [...records, ...taggedData];
+          }
+        }
+      }
+      if (Array.isArray(obj)) {
+        for (const item of obj) findDataArray(item);
+      } else {
+        for (const key of Object.keys(obj)) findDataArray(obj[key]);
+      }
     }
+    findDataArray(algoData);
   }
-  return null;
+  return records;
 }
 
-function parseNumericValue(value: string | null | undefined): number | null {
-  if (value === null || value === undefined) return null;
-  const normalized = value.trim().replaceAll(",", ".");
-  if (!normalized) return null;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function getAlgorithmLabel(row: CsvRow): string {
-  const value = getCellValue(row, ["algorithm", "algoritmo", "algo"]);
-  if (!value) return "Otros";
-  const upper = value.toUpperCase();
-  if (upper.includes("AES")) return "AES";
-  if (upper.includes("RSA")) return "RSA";
-  if (upper.includes("SHA256") || upper.includes("SHA-256")) return "SHA-256";
-  if (upper.includes("MD5")) return "MD5";
-  return value;
-}
+const formatMetric = (value: number | null, decimals: number = 2) => {
+  if (value === null || !Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: decimals }).format(value);
+};
 
 export default function FuerzaBrutaPage() {
-  const [csvData, setCsvData] = useState<Record<string, { data: CsvData | null; error: string | null }>>({});
-  const [loading, setLoading] = useState(true);
-  const sourceMap = useMemo(() => getConfiguredDriveSources(), []);
+  const [activeTab, setActiveTab] = useState("General");
+  const tabs = ["General", "AES", "RSA", "MD5", "SHA-256"];
 
-  useEffect(() => {
-    let active = true;
-    async function loadData() {
-      setLoading(true);
-      const results = await fetchDriveCsvs({
-        vulnerability: sourceMap.vulnerability,
-      });
-      if (active) setCsvData(results);
+  const allRows = useMemo(() => extractAttacksData(attacksRawData), []);
+
+  const filteredRows = useMemo(() => {
+    if (activeTab === "General") return allRows;
+    const targetNormalized = activeTab.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    return allRows.filter((r) => r._algo?.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === targetNormalized);
+  }, [allRows, activeTab]);
+
+  const getBestValue = (row: any, candidates: string[]): number => {
+    for (const key of candidates) {
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") {
+        const num = Number(row[key]);
+        if (!isNaN(num)) return num;
+      }
     }
-    const handleSourcesUpdated = () => void loadData();
-    void loadData().finally(() => { if (active) setLoading(false); });
-    window.addEventListener(DRIVE_SOURCE_UPDATE_EVENT, handleSourcesUpdated);
-    return () => {
-      active = false;
-      window.removeEventListener(DRIVE_SOURCE_UPDATE_EVENT, handleSourcesUpdated);
-    };
-  }, [sourceMap.vulnerability]);
+    return 0;
+  };
 
-  const rows = csvData.vulnerability?.data?.rows ?? [];
-
-  // 1. Cálculos para Tarjetas Métricas (KPIs)
-  const totalAttacks = rows.length;
-  
   const metricsSummary = useMemo(() => {
-    const times = rows.map(r => parseNumericValue(getCellValue(r, timeCandidates))).filter((v): v is number => v !== null);
-    const attempts = rows.map(r => parseNumericValue(getCellValue(r, attemptsCandidates))).filter((v): v is number => v !== null);
-    const speeds = rows.map(r => parseNumericValue(getCellValue(r, speedCandidates))).filter((v): v is number => v !== null);
+    if (filteredRows.length === 0) return { count: 0, maxTime: 0, avgAttempts: 0, avgRate: 0 };
+    let maxTime = 0, totalAttempts = 0, totalRate = 0;
+    filteredRows.forEach((r: any) => {
+      const time = getBestValue(r, ["time_to_crack_seconds", "total_time_seconds", "time"]);
+      const att = getBestValue(r, ["attempts", "total_attempts"]);
+      const rate = getBestValue(r, ["attempts_per_second", "rate"]);
+      if (time > maxTime) maxTime = time;
+      totalAttempts += att;
+      totalRate += rate;
+    });
+    return {
+      count: filteredRows.length,
+      maxTime,
+      avgAttempts: totalAttempts / filteredRows.length,
+      avgRate: totalRate / filteredRows.length,
+    };
+  }, [filteredRows]);
 
-    const maxTime = times.length ? Math.max(...times) : 0;
-    const avgAttempts = attempts.length ? attempts.reduce((a, b) => a + b, 0) / attempts.length : 0;
-    const avgSpeed = speeds.length ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
+  // CORRECCIÓN: Agrupación robusta y cálculo de "Tasa"
+  const lengthChartData = useMemo(() => {
+    const grouped = new Map<string, { time: number[]; att: number[]; rate: number[] }>();
 
-    return { maxTime, avgAttempts, avgSpeed };
-  }, [rows]);
+    filteredRows.forEach((r: any, index: number) => {
+      let len = getBestValue(r, ["password_length", "length", "longitud"]);
+      const time = getBestValue(r, ["time_to_crack_seconds", "total_time_seconds", "time"]);
+      const att = getBestValue(r, ["attempts"]);
+      const rate = getBestValue(r, ["attempts_per_second", "rate"]);
 
-  // 2. Gráfico A: Curva Exponencial (Agrupado por longitud de contraseña para limpiar la tendencia)
-  const exponentialCurveData = useMemo(() => {
-    const grouped = new Map<number, { totalTime: number; count: number }>();
-    
-    rows.forEach((row) => {
-      const len = parseNumericValue(getCellValue(row, lengthCandidates));
-      const time = parseNumericValue(getCellValue(row, timeCandidates));
-      
-      if (len !== null && time !== null) {
-        const current = grouped.get(len) ?? { totalTime: 0, count: 0 };
-        grouped.set(len, {
-          totalTime: current.totalTime + time,
-          count: current.count + 1,
-        });
-      }
+      // Cascada de respaldos para evitar "Desconocido"
+      let key = "Desconocido";
+      if (len > 0) key = `Len ${len}`;
+      else if (r.category) key = String(r.category);
+      else if (r.record_id) key = `ID ${r.record_id}`;
+      else if (r.target_id) key = `Target ${r.target_id}`;
+      else key = `Vector ${index + 1}`; // Respaldo final si no hay nada más
+
+      if (!grouped.has(key)) grouped.set(key, { time: [], att: [], rate: [] });
+      const current = grouped.get(key)!;
+      if (time > 0) current.time.push(time);
+      if (att > 0) current.att.push(att);
+      if (rate > 0) current.rate.push(rate);
     });
 
     return Array.from(grouped.entries())
-      .map(([longitud, item]) => ({
-        longitud,
-        "Tiempo Ruptura (s)": Number((item.totalTime / item.count).toFixed(5)),
-      }))
-      .sort((a, b) => a.longitud - b.longitud);
-  }, [rows]);
+      .map(([name, vals]) => {
+        return {
+          name,
+          Tiempo: vals.time.length ? vals.time.reduce((a, b) => a + b, 0) / vals.time.length : 0,
+          Intentos: vals.att.length ? vals.att.reduce((a, b) => a + b, 0) / vals.att.length : 0,
+          Tasa: vals.rate.length ? vals.rate.reduce((a, b) => a + b, 0) / vals.rate.length : 0, // Tasa agregada
+        };
+      })
+      .sort((a, b) => {
+        const numA = parseInt(a.name.replace(/\D/g, "")) || 0;
+        const numB = parseInt(b.name.replace(/\D/g, "")) || 0;
+        return numA - numB;
+      });
+  }, [filteredRows]);
 
-  // 3. Gráfico B: Velocidad de Procesamiento del Atacante por Algoritmo (BarChart)
-  const speedByAlgoData = useMemo(() => {
-    const grouped = new Map<string, { totalSpeed: number; count: number }>();
-
-    rows.forEach((row) => {
-      const algo = getAlgorithmLabel(row);
-      const speed = parseNumericValue(getCellValue(row, speedCandidates));
-
-      if (speed !== null) {
-        const current = grouped.get(algo) ?? { totalSpeed: 0, count: 0 };
-        grouped.set(algo, {
-          totalSpeed: current.totalSpeed + speed,
-          count: current.count + 1,
-        });
+  const algoChartData = useMemo(() => {
+    const grouped = new Map<string, number[]>();
+    filteredRows.forEach((r: any) => {
+      const algo = r._algo || "Otro";
+      const rate = getBestValue(r, ["attempts_per_second", "rate"]);
+      if (rate > 0) {
+        if (!grouped.has(algo)) grouped.set(algo, []);
+        grouped.get(algo)!.push(rate);
       }
     });
-
-    // Fallbacks estadísticos por si las columnas de velocidad de ataque vienen vacías en pruebas iniciales
-    if (grouped.size === 0 && rows.length > 0) {
-      return [
-        { name: "MD5", "Claves/seg": 4500000 },
-        { name: "SHA-256", "Claves/seg": 1800000 },
-        { name: "AES", "Claves/seg": 120000 },
-        { name: "RSA", "Claves/seg": 850 },
-      ];
-    }
-
-    return Array.from(grouped.entries()).map(([name, item]) => ({
+    return Array.from(grouped.entries()).map(([name, rates]) => ({
       name,
-      "Claves/seg": Math.round(item.totalSpeed / item.count),
+      Tasa: rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : 0,
     }));
-  }, [rows]);
-
-  // 4. Gráfico C: Intentos requeridos vs Longitud de Contraseña
-  const attemptsChartData = useMemo(() => {
-    const grouped = new Map<number, { totalAttempts: number; count: number }>();
-    
-    rows.forEach((row) => {
-      const len = parseNumericValue(getCellValue(row, lengthCandidates));
-      const att = parseNumericValue(getCellValue(row, attemptsCandidates));
-      
-      if (len !== null && att !== null) {
-        const current = grouped.get(len) ?? { totalAttempts: 0, count: 0 };
-        grouped.set(len, {
-          totalAttempts: current.totalAttempts + att,
-          count: current.count + 1,
-        });
-      }
-    });
-
-    return Array.from(grouped.entries())
-      .map(([longitud, item]) => ({
-        longitud: `Len ${longitud}`,
-        "Intentos Medios": Math.round(item.totalAttempts / item.count),
-      }))
-      .sort((a, b) => a.longitud.localeCompare(b.longitud));
-  }, [rows]);
+  }, [filteredRows]);
 
   const customTooltipStyle = {
     contentStyle: { backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px" },
     labelStyle: { color: "#fff", fontWeight: "bold" },
   };
 
-  const hasConfiguredSources = Boolean(sourceMap.vulnerability);
-
   return (
     <DashboardShell
       eyebrow="Módulo académico"
       title="Simulación Estocástica de Fuerza Bruta"
-      description="Análisis empírico del crecimiento exponencial de resistencia y tasa de inyección de claves por segundo del software atacante."
+      description="Análisis empírico del crecimiento exponencial de resistencia y tasa de inyección de claves por segundo."
       badge="Análisis de Robustez"
     >
-      {/* Fila superior de KPIs */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <MetricCard label="Simulaciones Ejecutadas" value={totalAttacks > 0 ? String(totalAttacks) : "—"} detail="Total de vectores probados" accent="text-white" />
-        <MetricCard label="Tiempo Máx Resistencia" value={metricsSummary.maxTime > 0 ? `${formatMetric(metricsSummary.maxTime)} s` : "—"} detail="Peor escenario (Clave compleja)" accent="text-amber-200" />
-        <MetricCard label="Intentos Promedio" value={metricsSummary.avgAttempts > 0 ? formatMetric(Math.round(metricsSummary.avgAttempts)) : "—"} detail="Complejidad de ruptura media" accent="text-cyan-200" />
-        <MetricCard label="Tasa de Inyección Media" value={metricsSummary.avgSpeed > 0 ? `${formatMetric(Math.round(metricsSummary.avgSpeed))} c/s` : "—"} detail="Velocidad del hardware atacante" accent="text-emerald-200" />
+      <div className="mb-6 flex flex-wrap gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${
+              activeTab === tab
+                ? "bg-fuchsia-500 text-white shadow-[0_0_15px_rgba(217,70,239,0.5)]"
+                : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      {!hasConfiguredSources && !loading ? (
-        <div className="mt-6 rounded-[24px] border border-dashed border-white/10 bg-slate-900/70 p-5 text-sm leading-7 text-slate-400">
-          Aún no hay URLs configuradas en el Dataset. Guarda los enlaces de Drive para cargar las simulaciones de ataque.
-        </div>
-      ) : null}
+      <div className="grid gap-4 md:grid-cols-4">
+        <MetricCard label="Simulaciones Ejecutadas" value={metricsSummary.count.toString()} detail={activeTab === "General" ? "Vectores totales del JSON" : `Vectores del algoritmo ${activeTab}`} accent="text-white" />
+        <MetricCard label="Tiempo Máx Resistencia" value={`${formatMetric(metricsSummary.maxTime, 4)} s`} detail="Peor escenario (Clave compleja)" accent="text-amber-300" />
+        <MetricCard label="Intentos Promedio" value={formatMetric(metricsSummary.avgAttempts, 0)} detail="Complejidad de ruptura media" accent="text-cyan-300" />
+        <MetricCard label="Tasa de Inyección Media" value={`${formatMetric(metricsSummary.avgRate, 0)} c/s`} detail="Velocidad del hardware atacante" accent="text-emerald-300" />
+      </div>
 
-      {/* Bloque de Gráficos Principales */}
-      {hasConfiguredSources && (
+      {filteredRows.length > 0 ? (
         <div className="mt-6 space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            
-            {/* Gráfico 1: Complejidad Exponencial */}
-            <VisualPanel title="Curva de Complejidad Temporal" subtitle="Longitud de Contraseña vs. Tiempo Medio de Ruptura (Segundos)">
-              <div className="mt-4 h-[280px] w-full">
-                {exponentialCurveData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={exponentialCurveData} margin={{ top: 10, right: 20, left: -15, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="longitud" type="number" domain={["dataMin - 1", "dataMax + 1"]} stroke="#94a3b8" fontSize={11} name="Caracteres" />
-                      <YAxis stroke="#94a3b8" fontSize={11} />
-                      <Tooltip {...customTooltipStyle} />
-                      <Legend verticalAlign="top" height={36} />
-                      <Line type="monotone" dataKey="Tiempo Ruptura (s)" stroke="#f43f5e" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} name="Tiempo de Ruptura" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">Procesando curva exponencial...</div>
-                )}
-              </div>
-              <p className="mt-2 text-center text-xs text-slate-500">Demuestra visualmente cómo añadir un solo carácter multiplica el tiempo necesario para vulnerar el sistema.</p>
-            </VisualPanel>
-
-            {/* Gráfico 2: Capacidad de Inyección del Atacante */}
-            <VisualPanel title="Poder de Cómputo del Atacante" subtitle="Claves o Intentos por Segundo tolerados por Algoritmo">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <VisualPanel title="Curva de Complejidad Temporal" subtitle="Tiempo Medio de Ruptura vs Clasificación de Vector">
               <div className="mt-4 h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={speedByAlgoData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <LineChart data={lengthChartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
                     <YAxis stroke="#94a3b8" fontSize={11} />
-                    <Tooltip {...customTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                    <Bar dataKey="Claves/seg" fill="#10b981" radius={[6, 6, 0, 0]} name="Intentos/seg" />
+                    <Tooltip {...customTooltipStyle} formatter={(value) => [`${formatMetric(Number(value))} s`, "Tiempo Medio"]} />
+                    <Line type="monotone" dataKey="Tiempo" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </VisualPanel>
+
+            <VisualPanel title="Poder de Cómputo del Atacante" subtitle={activeTab === "General" ? "Claves por segundo procesadas por Algoritmo" : "Claves por segundo según vector de ataque"}>
+              <div className="mt-4 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={activeTab === "General" ? algoChartData : lengthChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+                    <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => val >= 1000 ? `${(val/1000).toFixed(0)}k` : val} />
+                    <Tooltip {...customTooltipStyle} formatter={(value) => [`${formatMetric(Number(value), 0)} c/s`, "Inyección"]} />
+                    <Bar dataKey="Tasa" fill="#10b981" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="mt-2 text-center text-xs text-slate-500">Muestra la debilidad de algoritmos veloces (MD5) frente a ataques automatizados.</p>
             </VisualPanel>
           </div>
 
-          {/* Gráfico 3: Volumen de combinaciones evaluadas */}
-          <VisualPanel title="Espacio de Trabajo Recorrido" subtitle="Volumen de Intentos Promedio Requeridos según la Longitud">
+          <VisualPanel title="Espacio de Trabajo Recorrido" subtitle="Volumen de Intentos Promedio Requeridos para Fractura">
             <div className="mt-4 h-[240px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={attemptsChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <BarChart data={lengthChartData} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="longitud" stroke="#94a3b8" fontSize={11} />
-                  <YAxis stroke="#94a3b8" fontSize={11} />
-                  <Tooltip {...customTooltipStyle} formatter={(value) => [Number(value).toLocaleString(), "Intentos"]} />
-                  <Bar dataKey="Intentos Medios" fill="#38bdf8" radius={[4, 4, 0, 0]} barSize={40} />
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickFormatter={(val) => val.toExponential(1)} />
+                  <Tooltip {...customTooltipStyle} formatter={(value) => [formatMetric(Number(value), 0), "Intentos"]} />
+                  <Bar dataKey="Intentos" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </VisualPanel>
+        </div>
+      ) : (
+        <div className="mt-6 flex h-[300px] items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-slate-900/70 text-slate-400">
+          No se encontraron registros de Fuerza Bruta para {activeTab} en el archivo JSON.
         </div>
       )}
     </DashboardShell>

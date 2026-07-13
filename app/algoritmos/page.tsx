@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -13,123 +15,96 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
+// IMPORTACIÓN NATIVA DEL JSON
+import algorithmsRawData from "../data/algorithms.json";
+
 import DashboardShell from "../components/dashboard-shell";
-import Link from "next/link";
 import MetricCard from "../components/metric-card";
 import VisualPanel from "../components/visual-panel";
-import {
-  DRIVE_SOURCE_UPDATE_EVENT,
-  fetchDriveCsvs,
-  formatMetric,
-  getConfiguredDriveSources,
-  summarizeNumeric,
-  type CsvData,
-} from "../lib/csv-analytics";
 
-const algorithmConfigs = [
-  {
-    name: "AES",
-    key: "aesMetrics",
-    title: "Tiempo de cifrado",
-    sizeCandidates: ["data_size_bytes", "data_size_bytest", "size_bytes"],
-    timeCandidates: ["encryption_time", "encryption_time_seconds", "execution_time"],
-    throughputCandidates: ["throughput_bps", "throughput"],
-  },
-  {
-    name: "MD5",
-    key: "md5Metrics",
-    title: "Tiempo de hash",
-    sizeCandidates: ["input_length", "input_size_bytes"],
-    timeCandidates: ["hash_time", "execution_time"],
-    throughputCandidates: ["throughput_bps", "throughput"],
-  },
-  {
-    name: "RSA",
-    key: "rsaMetrics",
-    title: "Tiempo de cifrado",
-    sizeCandidates: ["data_size_bytes", "data_size_bytest", "ciphertext_size_bytes"],
-    timeCandidates: ["encryption_time", "encryption_time_seconds", "execution_time"],
-    throughputCandidates: ["throughput_bps", "throughput"],
-  },
-  {
-    name: "SHA-256",
-    key: "shaMetrics",
-    title: "Tiempo de hash",
-    sizeCandidates: ["input_length", "input_size_bytes"],
-    timeCandidates: ["hash_time", "execution_time"],
-    throughputCandidates: ["throughput_bps", "throughput"],
-  },
-] as const;
-
-export default function AlgoritmosPage() {
-  const [csvData, setCsvData] = useState<Record<string, { data: CsvData | null; error: string | null }>>({});
-  const [loading, setLoading] = useState(true);
-  const sourceMap = useMemo(() => getConfiguredDriveSources(), []);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadMetrics() {
-      setLoading(true);
-      const results = await fetchDriveCsvs(sourceMap);
-      if (active) {
-        setCsvData(results);
+// 1. Buscador profundo basado en "Duck Typing"
+function extractRowsForAlgorithm(jsonData: any, targetAlgo: string): any[] {
+  if (!jsonData) return [];
+  const targetNormalized = targetAlgo.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const algoKey = Object.keys(jsonData).find(
+    key => key.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === targetNormalized
+  );
+  if (!algoKey) return [];
+  const algoData = jsonData[algoKey];
+  let records: any[] = [];
+  function findDataArray(obj: any) {
+    if (records.length > 0) return;
+    if (!obj || typeof obj !== 'object') return;
+    for (const key of Object.keys(obj)) {
+      const value = obj[key];
+      if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+        if ('execution_time' in value[0] || 'file_size_mb' in value[0] || 'throughput_mb_s' in value[0]) {
+          records = value;
+          return;
+        }
       }
     }
+    if (Array.isArray(obj)) {
+      for (const item of obj) findDataArray(item);
+    } else {
+      for (const key of Object.keys(obj)) findDataArray(obj[key]);
+    }
+  }
+  findDataArray(algoData);
+  return records;
+}
 
-    const handleSourcesUpdated = () => {
-      void loadMetrics();
-    };
+const formatMetric = (value: number | null, decimals: number = 2) => {
+  if (value === null || !Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: decimals }).format(value);
+};
 
-    void loadMetrics().finally(() => {
-      if (active) {
-        setLoading(false);
+export default function AlgoritmosPage() {
+  const [activeTab, setActiveTab] = useState("AES");
+  const tabs = ["AES", "RSA", "MD5", "SHA"];
+
+  const rows = useMemo(() => extractRowsForAlgorithm(algorithmsRawData, activeTab), [activeTab]);
+
+  const getBestValue = (row: any, candidates: string[]): number => {
+    for (const key of candidates) {
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== "") {
+        const num = Number(row[key]);
+        if (!isNaN(num)) return num;
       }
+    }
+    return 0;
+  };
+
+  const metricsSummary = useMemo(() => {
+    if (rows.length === 0) return { avgTime: 0, avgThroughput: 0, avgCpu: 0, maxRam: 0 };
+    let totalTime = 0, totalThroughput = 0, totalCpu = 0, maxRam = 0;
+    rows.forEach((r: any) => {
+      totalTime += getBestValue(r, ["execution_time", "time_seconds", "time"]);
+      totalThroughput += getBestValue(r, ["throughput_mb_s", "throughput", "speed_mb_s", "rate"]);
+      totalCpu += getBestValue(r, ["cpu_usage", "cpu_percent", "cpu"]);
+      const ram = getBestValue(r, ["ram_usage_mb", "ram_mb", "ram_usage", "memory_mb"]);
+      if (ram > maxRam) maxRam = ram;
     });
-
-    window.addEventListener(DRIVE_SOURCE_UPDATE_EVENT, handleSourcesUpdated);
-
-    return () => {
-      active = false;
-      window.removeEventListener(DRIVE_SOURCE_UPDATE_EVENT, handleSourcesUpdated);
+    return {
+      avgTime: totalTime / rows.length,
+      avgThroughput: totalThroughput / rows.length,
+      avgCpu: totalCpu / rows.length,
+      maxRam: maxRam
     };
-  }, [sourceMap]);
+  }, [rows]);
 
-  const summaries = useMemo(() => {
-    return algorithmConfigs.map((config) => {
-      const entry = csvData[config.key];
-      const rows = entry?.data?.rows ?? [];
-      const timeSummary = summarizeNumeric(rows, config.timeCandidates);
-      const throughputSummary = summarizeNumeric(rows, config.throughputCandidates);
-      const sizeSummary = summarizeNumeric(rows, config.sizeCandidates);
-
-      return {
-        ...config,
-        timeSummary,
-        throughputSummary,
-        sizeSummary,
-        error: entry?.error ?? null,
-      };
-    });
-  }, [csvData]);
-
-  // Formateamos los datos para Recharts
   const chartData = useMemo(() => {
-    return summaries.map((algo) => ({
-      name: algo.name,
-      "Tiempo (s)": algo.timeSummary ? algo.timeSummary.average : 0,
-      "Throughput (bps)": algo.throughputSummary ? algo.throughputSummary.average : 0,
-    }));
-  }, [summaries]);
+    return [...rows]
+      .map((r: any) => ({
+        fileSize: getBestValue(r, ["file_size_mb", "file_size", "size_mb", "size"]),
+        executionTime: getBestValue(r, ["execution_time", "time_seconds", "time"]),
+        throughput: getBestValue(r, ["throughput_mb_s", "throughput", "speed_mb_s", "rate"]),
+        cpu: getBestValue(r, ["cpu_usage", "cpu_percent", "cpu"]),
+      }))
+      .sort((a, b) => a.fileSize - b.fileSize);
+  }, [rows]);
 
-  const aesSummary = summaries.find((item) => item.name === "AES");
-  const rsaSummary = summaries.find((item) => item.name === "RSA");
-  const md5Summary = summaries.find((item) => item.name === "MD5");
-  const shaSummary = summaries.find((item) => item.name === "SHA-256");
-
-  const hasConfiguredSources = Object.values(sourceMap).some(Boolean);
-
-  // Estilos del Tooltip adaptados a tu UI oscura
   const customTooltipStyle = {
     contentStyle: { backgroundColor: "#0f172a", borderColor: "rgba(255,255,255,0.1)", borderRadius: "12px" },
     labelStyle: { color: "#fff", fontWeight: "bold" },
@@ -138,144 +113,90 @@ export default function AlgoritmosPage() {
   return (
     <DashboardShell
       eyebrow="Módulo académico"
-      title="Implementación y análisis de algoritmos criptográficos"
-      description="Se presenta una visión comparativa de los algoritmos estudiados, sus características y los resultados obtenidos desde los datasets históricos."
-      badge="Comparativa visual"
+      title="Rendimiento Criptográfico"
+      description="Evaluación de eficiencia computacional: Tiempo de ejecución, uso de CPU y rendimiento por algoritmo."
+      badge="Benchmark"
     >
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        
-        {/* COLUMNA IZQUIERDA: TARJETAS CON EL BOTÓN DETALLE INCORPORADO */}
-        <div className="space-y-4">
-          {loading ? (
-            <div className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5 text-sm text-slate-400">
-              Cargando métricas desde Google Drive...
-            </div>
-          ) : null}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-full px-6 py-2 text-sm font-medium transition-all ${
+              activeTab === tab
+                ? "bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-          {summaries.map((algorithm) => (
-            <div
-              key={algorithm.name}
-              className="rounded-[24px] border border-white/10 bg-slate-900/70 p-5"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold text-white">
-                  {algorithm.name}
-                </h2>
+      <div className="grid gap-4 md:grid-cols-4">
+        <MetricCard label="Tiempo de Ejecución Medio" value={metricsSummary.avgTime > 0 ? `${formatMetric(metricsSummary.avgTime, 4)} s` : "0 s"} detail="Latencia operativa" accent="text-amber-200" />
+        <MetricCard label="Throughput Medio" value={metricsSummary.avgThroughput > 0 ? `${formatMetric(metricsSummary.avgThroughput)} MB/s` : "0 MB/s"} detail="Velocidad de procesamiento" accent="text-emerald-200" />
+        {/*<MetricCard label="Uso de CPU Medio" value={metricsSummary.avgCpu > 0 ? `${formatMetric(metricsSummary.avgCpu)} %` : "0 %"} detail="Carga en el procesador" accent="text-cyan-200" />*/}
+        {/*<MetricCard label="Pico de RAM" value={metricsSummary.maxRam > 0 ? `${formatMetric(metricsSummary.maxRam)} MB` : "0 MB"} detail="Consumo máximo de memoria" accent="text-fuchsia-200" />*/}
+      </div>
 
-                {/* TU EXCELENTE BOTÓN DE REDIRECCIÓN INTERACTIVA */}
-                <Link
-                  href={`/algoritmos/${algorithm.name.toLowerCase().replace("-", "")}`}
-                  className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-sm text-cyan-200 transition hover:bg-cyan-400/30 hover:border-cyan-400/40"
-                >
-                  Ver detalle →
-                </Link>
+      {rows.length > 0 ? (
+        <div className="mt-6 space-y-6">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <VisualPanel title="Escalabilidad Temporal" subtitle="Tiempo de ejecución en función del tamaño del archivo">
+              <div className="mt-4 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorTime" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="fileSize" stroke="#94a3b8" fontSize={11} name="MB" />
+                    <YAxis stroke="#94a3b8" fontSize={11} />
+                    <Tooltip {...customTooltipStyle} formatter={(value) => [`${formatMetric(Number(value), 4)} s`, "Tiempo"]} labelFormatter={(label) => `Archivo: ${label} MB`} />
+                    <Area type="monotone" dataKey="executionTime" stroke="#f59e0b" fillOpacity={1} fill="url(#colorTime)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
+            </VisualPanel>
 
-              {algorithm.error ? (
-                <p className="mt-3 text-sm text-amber-300">
-                  {algorithm.error}
-                </p>
-              ) : null}
-
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                <MetricCard
-                  label="Tiempo promedio"
-                  value={
-                    algorithm.timeSummary
-                      ? `${formatMetric(algorithm.timeSummary.average)} s`
-                      : "—"
-                  }
-                  detail={
-                    algorithm.timeSummary
-                      ? `Muestra: ${algorithm.timeSummary.count}`
-                      : "Sin datos"
-                  }
-                  accent="text-cyan-200"
-                />
-
-                <MetricCard
-                  label="Throughput"
-                  value={
-                    algorithm.throughputSummary
-                      ? `${formatMetric(algorithm.throughputSummary.average)} bps`
-                      : "—"
-                  }
-                  detail="Velocidad media"
-                  accent="text-emerald-200"
-                />
-
-                <MetricCard
-                  label="Tamaño promedio"
-                  value={
-                    algorithm.sizeSummary
-                      ? `${formatMetric(algorithm.sizeSummary.average)} bytes`
-                      : "—"
-                  }
-                  detail="Entrada"
-                  accent="text-fuchsia-200"
-                />
+            <VisualPanel title="Velocidad de Procesamiento (Throughput)" subtitle="Megabytes procesados por segundo">
+              <div className="mt-4 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="fileSize" stroke="#94a3b8" fontSize={11} />
+                    <YAxis stroke="#94a3b8" fontSize={11} />
+                    <Tooltip {...customTooltipStyle} formatter={(value) => [`${formatMetric(Number(value))} MB/s`, "Throughput"]} labelFormatter={(label) => `Archivo: ${label} MB`} />
+                    <Bar dataKey="throughput" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            </div>
-          ))}
+            </VisualPanel>
+          </div>
 
-          {!hasConfiguredSources && !loading ? (
-            <div className="rounded-[24px] border border-dashed border-white/10 bg-slate-900/70 p-5 text-sm leading-7 text-slate-400">
-              Aún no hay URLs configuradas en el Dataset. Guarda los enlaces de Drive para cargar estas métricas.
-            </div>
-          ) : null}
-        </div>
-
-        {/* COLUMNA DERECHA: DASHBOARDS */}
-        <div className="space-y-6">
-          <VisualPanel title="Rendimiento computacional" subtitle="Throughput Promedio (bps)">
-            <div className="mt-2 h-[260px] w-full">
+          {/*<VisualPanel title="Impacto en Hardware" subtitle="Consumo de CPU vs Tamaño de la carga útil">
+            <div className="mt-4 h-[240px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
-                  <Tooltip {...customTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '13px' }} />
-                  <Bar dataKey="Throughput (bps)" fill="#10b981" radius={[8, 8, 0, 0]} name="Velocidad (bps)" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </VisualPanel>
-
-          <VisualPanel title="Costo temporal" subtitle="Tiempo de ejecución por algoritmo">
-            <div className="mt-2 h-[260px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
-                  <Tooltip {...customTooltipStyle} />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '13px' }} />
-                  <Line type="monotone" dataKey="Tiempo (s)" stroke="#22d3ee" strokeWidth={3} activeDot={{ r: 8 }} name="Tiempo (s)" />
+                  <XAxis dataKey="fileSize" stroke="#94a3b8" fontSize={11} />
+                  <YAxis stroke="#94a3b8" fontSize={11} />
+                  <Tooltip {...customTooltipStyle} formatter={(value) => [`${formatMetric(Number(value))} %`, "CPU"]} labelFormatter={(label) => `Archivo: ${label} MB`} />
+                  <Line type="monotone" dataKey="cpu" stroke="#06b6d4" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </VisualPanel>
-
-          <VisualPanel title="Métricas Comparativas" subtitle="Indicadores clave">
-            <div className="space-y-3">
-              <MetricCard
-                label="AES vs RSA"
-                value={aesSummary?.timeSummary && rsaSummary?.timeSummary ? `${formatMetric(aesSummary.timeSummary.average)}s vs ${formatMetric(rsaSummary.timeSummary.average)}s` : "—"}
-                detail="Diferencia en tiempo promedio de cifrado"
-                accent="text-cyan-200"
-              />
-              <MetricCard
-                label="MD5 vs SHA-256"
-                value={md5Summary?.timeSummary && shaSummary?.timeSummary ? `${formatMetric(md5Summary.timeSummary.average)}s vs ${formatMetric(shaSummary.timeSummary.average)}s` : "—"}
-                detail="Diferencia en tiempo de hashing"
-                accent="text-emerald-200"
-              />
-            </div>
-          </VisualPanel>
+          </VisualPanel>*/}
         </div>
-
-      </div>
+      ) : (
+        <div className="mt-6 flex h-[300px] items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-slate-900/70 text-slate-400">
+          No se encontraron registros para el algoritmo {activeTab} en el archivo JSON.
+        </div>
+      )}
     </DashboardShell>
   );
 }
