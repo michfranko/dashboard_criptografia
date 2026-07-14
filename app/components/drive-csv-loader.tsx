@@ -1,4 +1,4 @@
-/*"use client";
+"use client";
 
 import { useState } from "react";
 import { parseCsv } from "../lib/csv-analytics";
@@ -89,4 +89,4 @@ export default function DriveCsvLoader() {
       ) : null}
     </div>
   );
-}*/
+}

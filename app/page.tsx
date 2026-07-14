@@ -1,229 +1,427 @@
+import { promises as fs } from "fs";
+import path from "path";
 import Link from "next/link";
+import DashboardShell from "./components/dashboard-shell";
+import MetricCard from "./components/metric-card";
+import VisualPanel from "./components/visual-panel";
+import HomeCharts from "./components/home-charts";
 
-const navItems = [
-  { href: "/", label: "Inicio" },
-  { href: "/algoritmos", label: "Algoritmos" },
-  { href: "/fuerza-bruta", label: "Fuerza bruta" },
-  { href: "/probabilidad", label: "Probabilidad" },
-  { href: "/simulacion", label: "Simulación" },
-];
+export default async function Home() {
+  const dataDir = path.join(process.cwd(), "app", "data");
 
-const kpis = [
-  { label: "Algoritmos evaluados", value: "4", detail: "AES, MD5, RSA y SHA-256" },
-  { label: "Registros procesados", value: "+13.5K", detail: "Métricas extraídas con Python" },
-  { label: "Arquitectura de datos", value: "JSON", detail: "Lectura estática de alta velocidad" },
-  { label: "Latencia del sistema", value: "0 ms", detail: "Renderizado instantáneo sin APIs" },
-];
+  // Leer archivos JSON en el servidor de forma segura
+  const dashboardRaw = await fs.readFile(path.join(dataDir, "dashboard.json"), "utf8");
+  const dashboard = JSON.parse(dashboardRaw);
 
-const modules = [
-  {
-    title: "Análisis de algoritmos",
-    description: "Comparación de rendimiento, escalabilidad temporal y consumo de recursos de hardware.",
-    accent: "from-cyan-500/25 to-cyan-400/5",
-  },
-  {
-    title: "Ataques de fuerza bruta",
-    description: "Evaluación del coste computacional, intentos y tiempo de ruptura por escenario.",
-    accent: "from-emerald-500/25 to-emerald-400/5",
-  },
-  {
-    title: "Probabilidad y Entropía",
-    description: "Modelado estocástico, crecimiento exponencial y análisis del espacio de búsqueda.",
-    accent: "from-fuchsia-500/25 to-fuchsia-400/5",
-  },
-];
+  const attacksRaw = await fs.readFile(path.join(dataDir, "attacks.json"), "utf8");
+  const attacks = JSON.parse(attacksRaw);
 
-const stages = [
-  "Extracción en Python",
-  "Exportación de Modelos",
-  "Lectura en Next.js",
-  "Visualización Analítica",
-];
+  const probabilitiesRaw = await fs.readFile(path.join(dataDir, "probabilities.json"), "utf8");
+  const probabilities = JSON.parse(probabilitiesRaw);
 
-const comparisons = [
-  { name: "AES", score: 92, tone: "bg-cyan-400" },
-  { name: "MD5", score: 78, tone: "bg-emerald-400" },
-  { name: "RSA", score: 74, tone: "bg-fuchsia-400" },
-  { name: "SHA-256", score: 90, tone: "bg-amber-400" },
-];
+  // Extraer indicadores de dashboard.json
+  const totalRecords = dashboard.aggregate.total_records;
+  const totalFiles = dashboard.aggregate.total_files;
+  const genDate = dashboard.metadata.generation_date;
 
-export default function Home() {
-  return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.15),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(192,132,252,0.16),_transparent_24%),linear-gradient(135deg,_#020617_0%,_#0f172a_45%,_#111827_100%)] text-slate-100">
-      <div className="mx-auto flex min-h-screen w-[96%] max-w-[1800px] flex-col lg:flex-row">
-        <aside className="w-full border-b border-white/10 bg-slate-950/70 px-5 py-6 backdrop-blur lg:w-72 lg:border-b-0 lg:border-r lg:px-6">
-          <div className="rounded-2xl border border-cyan-400/20 bg-slate-900/80 p-4 shadow-[0_0_45px_rgba(34,211,238,0.08)]">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-400/15 text-xl text-cyan-300">
-              🔐
-            </div>
-            <h2 className="text-lg font-semibold text-white">CryptoLab Research</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Plataforma académica para análisis de criptografía, protocolos y seguridad.
-            </p>
-          </div>
-
-          <nav className="mt-6 space-y-2">
-            {navItems.map((item, index) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm transition ${
-                  item.href === "/"
-                    ? "bg-cyan-400/15 text-cyan-200"
-                    : "bg-slate-900/70 text-slate-300 hover:bg-slate-800"
-                }`}
-              >
-                <span>{item.label}</span>
-                <span className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                  0{index + 1}
-                </span>
-              </Link>
-            ))}
-          </nav>
-
-          {/* Actualizamos el estado para reflejar la arquitectura JSON */}
-          <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
-            <p className="text-xs uppercase tracking-[0.35em] text-emerald-300">Estado del Sistema</p>
-            <p className="mt-2 text-sm text-slate-200">Datos procesados localmente en tiempo real.</p>
-            <div className="mt-3 h-2 rounded-full bg-slate-800">
-              <div className="h-2 w-full rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
-            </div>
-          </div>
-        </aside>
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <header className="mb-6 flex flex-col gap-3 rounded-[28px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_0_60px_rgba(15,23,42,0.35)] sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">Proyecto de investigación</p>
-              <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
-                Plataforma de análisis criptográfico y visualización de seguridad
-              </h1>
-            </div>
-            {/* Cambiamos la etiqueta de "En desarrollo" */}
-            <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-              Laboratorio finalizado v1.0
-            </div>
-          </header>
-
-          <section className="grid gap-6 xl:grid-cols-[1.35fr_0.9fr]">
-            <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-6 shadow-[0_0_60px_rgba(15,23,42,0.3)]">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">Inicio</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">
-                    Análisis y visualización de protocolos
-                  </h2>
-                </div>
-                <div className="rounded-full border border-fuchsia-400/20 bg-fuchsia-400/10 px-3 py-1 text-sm text-fuchsia-200">
-                  Investigación académica
-                </div>
-              </div>
-
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
-                Esta plataforma reúne experimentos, métricas de hardware y simulaciones estadísticas para estudiar el comportamiento de los algoritmos criptográficos frente a ataques de fuerza bruta y medir su complejidad matemática (entropía).
-              </p>
-
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="text-sm font-medium text-white">Objetivo</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Proporcionar un entorno visual para evaluar latencia operativa, consumo de CPU, RAM y riesgo estimado en cifrados.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="text-sm font-medium text-white">Arquitectura</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Procesamiento de datos off-grid extraídos con Python y renderizados en React mediante estructuras JSON estáticas.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-6 shadow-[0_0_60px_rgba(15,23,42,0.3)]">
-              <p className="text-sm uppercase tracking-[0.35em] text-emerald-300">Indicadores clave</p>
-              <div className="mt-4 space-y-3">
-                {kpis.map((item) => (
-                  <div key={item.label} className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
-                    <div className="flex items-end justify-between gap-3">
-                      <p className="text-sm text-slate-300">{item.label}</p>
-                      <p className="text-lg font-semibold text-white">{item.value}</p>
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-slate-500">{item.detail}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="mt-6 grid gap-4 md:grid-cols-4">
-            {[
-              { label: "Protocolos analizados", value: "8" },
-              { label: "Escenarios de ataque", value: "24" },
-              { label: "Arquitectura", value: "Next.js" },
-              { label: "Visualizaciones dinámicas", value: "12+" },
-            ].map((item) => (
-              <div key={item.label} className="rounded-[24px] border border-white/10 bg-slate-900/70 p-4">
-                <p className="text-sm text-slate-400">{item.label}</p>
-                <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
-              </div>
-            ))}
-          </section>
-
-          <section className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-6 shadow-[0_0_60px_rgba(15,23,42,0.3)]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm uppercase tracking-[0.35em] text-cyan-300">Flujo del proyecto</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">De Python a Dashboard Interactivo</h3>
-                </div>
-                <div className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-sm text-slate-400">
-                  Pipeline técnico
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-3 md:grid-cols-2">
-                {stages.map((stage, index) => (
-                  <div key={stage} className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                    <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-400/15 text-sm font-semibold text-cyan-200">
-                      {index + 1}
-                    </div>
-                    <p className="text-sm font-medium text-white">{stage}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-slate-900/70 p-6 shadow-[0_0_60px_rgba(15,23,42,0.3)]">
-              <p className="text-sm uppercase tracking-[0.35em] text-fuchsia-300">Comparativa de Seguridad (Teórica)</p>
-              <div className="mt-5 space-y-4">
-                {comparisons.map((item) => (
-                  <div key={item.name}>
-                    <div className="mb-2 flex items-center justify-between text-sm">
-                      <span className="text-slate-300">{item.name}</span>
-                      <span className="text-white">{item.score}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-slate-800">
-                      <div className={`h-2 rounded-full ${item.tone}`} style={{ width: `${item.score}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="mt-6 grid gap-6 lg:grid-cols-3">
-            {modules.map((module) => (
-              <div key={module.title} className={`rounded-[28px] border border-white/10 bg-gradient-to-br ${module.accent} p-[1px]`}>
-                <div className="h-full rounded-[27px] bg-slate-950/90 p-5">
-                  <p className="text-sm uppercase tracking-[0.35em] text-slate-400">Módulo Analítico</p>
-                  <h3 className="mt-3 text-xl font-semibold text-white">{module.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-400">{module.description}</p>
-                </div>
-              </div>
-            ))}
-          </section>
-        </main>
-      </div>
-    </div>
+  // Extraer resumen de ataques de attacks.json
+  const attackStatsDataset = attacks.RESULTADOS_GLOBALES.datasets.find(
+    (d: any) => d.file === "attack_statistics.csv"
   );
-}
+  const attackStats = attackStatsDataset ? attackStatsDataset.data : [];
+
+  // Calcular totales agregados de ataques
+  let totalSuccessful = 0;
+  let totalFailed = 0;
+  let totalAttacks = 0;
+  attackStats.forEach((s: any) => {
+    totalSuccessful += s.successful_attacks || 0;
+    totalFailed += s.failed_attacks || 0;
+    totalAttacks += s.total_attacks || 0;
+  });
+
+  // Gráficos comparativos (Recharts)
+  const comparisonData = attackStats.map((s: any) => ({
+    name: s.algoritmo,
+    tiempo: Number(s.average_time || 0),
+    exito: Number(s.success_rate || 0),
+  }));
+
+  // Extraer datos de probabilies.json (Intervalos de Confianza)
+  const icDataset = probabilities.distributions.data.find(
+    (d: any) => d.file === "intervalos_confianza.csv"
+  );
+  const icData = icDataset ? icDataset.data : [];
+
+  const aes95Val = icData.find(
+    (d: any) => d.algoritmo === "AES" && d.m_trica === "execution_time" && d.nivel_de_confianza === "95%"
+  ) || {};
+  const rsa95Val = icData.find(
+    (d: any) => d.algoritmo === "RSA" && d.m_trica === "execution_time" && d.nivel_de_confianza === "95%"
+  ) || {};
+
+  // Extraer Kruskal-Wallis de probabilities.json
+  const compDataset = probabilities.distributions.data.find(
+    (d: any) => d.file === "comparaciones_estadisticas.csv"
+  );
+  const compData = compDataset ? compDataset.data : [];
+  const kwTime = compData.find((d: any) => d.m_trica === "execution_time") || {};
+
+  // Extraer Modelos de Regresión de probabilities.json
+  const regDataset = probabilities.distributions.data.find(
+    (d: any) => d.file === "modelos_regresion.csv"
+  );
+  const regData = regDataset ? regDataset.data : [];
+  
+  const md5Reg = regData.find(
+    (d: any) => d.algoritmo === "MD5" && d.variable_dependiente === "attack_time_seconds"
+  ) || {};
+  const shaReg = regData.find(
+    (d: any) => (d.algoritmo === "SHA-256" || d.algoritmo === "SHA") && d.variable_dependiente === "attack_time_seconds"
+  ) || {};
+
+  return (
+    <DashboardShell
+      eyebrow="Proyecto de investigación"
+      title="Plataforma de análisis criptográfico y visualización de seguridad"
+      description="Esta plataforma reúne experimentos, métricas de hardware y simulaciones estadísticas para estudiar el comportamiento de los algoritmos criptográficos frente a ataques de fuerza bruta y medir su complejidad matemática (entropía)."
+      badge="Laboratorio finalizado v1.0"
+    >
+      <div className="space-y-6">
+        {/* Fila de Metadatos de Actividad */}
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/5 bg-slate-950/40 p-4 text-xs text-slate-400">
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <span>
+              <strong className="text-slate-300">Proyecto:</strong> {dashboard.metadata.project_name}
+            </span>
+            <span>
+              <strong className="text-slate-300">Generación:</strong>{" "}
+              {new Date(genDate).toLocaleString("es-ES")}
+            </span>
+            <span>
+              <strong className="text-slate-300">Archivos Pipeline:</strong> {totalFiles}
+            </span>
+            <span>
+              <strong className="text-slate-300">Algoritmos Analizados:</strong> 4 (AES, RSA, MD5, SHA-256)
+            </span>
+          </div>
+          <span className="flex items-center gap-1.5 font-medium text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Estado: Datos Sincronizados
+          </span>
+        </div>
+
+        {/* KPIs Principales */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <MetricCard
+            label="Experimentos Totales"
+            value={totalRecords.toLocaleString()}
+            detail="Registros de hardware procesados"
+            accent="text-white"
+          />
+          <MetricCard
+            label="Simulaciones de Ataque"
+            value={totalAttacks.toString()}
+            detail="Intentos de fuerza bruta ejecutados"
+            accent="text-cyan-200"
+          />
+          <MetricCard
+            label="Algoritmo Más Resistente"
+            value="AES-256"
+            detail="0% éxito de crackeo (162.19s prom.)"
+            accent="text-emerald-200"
+          />
+          <MetricCard
+            label="Algoritmo Más Vulnerable"
+            value="RSA-2048"
+            detail="55.56% éxito de crackeo (0.91s prom.)"
+            accent="text-rose-200"
+          />
+        </div>
+
+        {/* Visualizaciones Interactivas (Recharts) */}
+        <HomeCharts
+          comparisonData={comparisonData}
+          totalSuccessful={totalSuccessful}
+          totalFailed={totalFailed}
+        />
+
+        {/* Resumen Operativo y Probabilístico */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Tabla de Resumen de Ataques */}
+          <VisualPanel
+            title="Resumen de Ataques"
+            subtitle="Resultados empíricos de simulaciones de fuerza bruta por diccionario y directo"
+          >
+            <div className="overflow-x-auto mt-4">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="border-b border-slate-800 bg-slate-950/30 text-slate-400">
+                  <tr>
+                    <th className="px-3 py-3 font-semibold uppercase">Algoritmo</th>
+                    <th className="px-3 py-3 font-semibold uppercase">Éxito / Total</th>
+                    <th className="px-3 py-3 font-semibold uppercase">Tasa de Éxito</th>
+                    <th className="px-3 py-3 font-semibold uppercase">Tiempo Promedio</th>
+                    <th className="px-3 py-3 font-semibold uppercase">Intentos Promedio</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {attackStats.map((s: any) => (
+                    <tr key={s.algoritmo} className="hover:bg-slate-900/35 transition">
+                      <td className="px-3 py-3 font-semibold text-white">{s.algoritmo}</td>
+                      <td className="px-3 py-3">
+                        {s.successful_attacks} / {s.total_attacks}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            s.success_rate === 0
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : s.success_rate > 50
+                              ? "bg-rose-500/10 text-rose-400"
+                              : "bg-amber-500/10 text-amber-400"
+                          }`}
+                        >
+                          {Number(s.success_rate).toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 font-mono text-cyan-300">
+                        {Number(s.average_time).toFixed(3)}s
+                      </td>
+                      <td className="px-3 py-3 font-mono text-slate-400">
+                        {Number(s.average_attempts).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </VisualPanel>
+
+          {/* Modelado Probabilístico */}
+          <VisualPanel
+            title="Modelado Probabilístico"
+            subtitle="Comportamiento estocástico e inferencia estadística"
+          >
+            <div className="mt-4 space-y-4 text-xs text-slate-400 leading-6">
+              <div>
+                <span className="font-semibold text-white">Modelado de Crecimiento de Latencia:</span>
+                <p className="mt-1">
+                  Los tiempos de ataque de MD5 y SHA-256 exhiben un comportamiento polinómico en relación con la longitud de entrada, con coeficientes de determinación robustos:
+                </p>
+                <ul className="list-disc list-inside mt-2 space-y-1 text-slate-300">
+                  <li>
+                    SHA-256: Modelo Polinómico ($R^2$ ={" "}
+                    <span className="text-fuchsia-300 font-semibold font-mono">
+                      {Number(shaReg.mejor_r2 || 0).toFixed(4)}
+                    </span>
+                    )
+                  </li>
+                  <li>
+                    MD5: Modelo Polinómico ($R^2$ ={" "}
+                    <span className="text-fuchsia-300 font-semibold font-mono">
+                      {Number(md5Reg.mejor_r2 || 0).toFixed(4)}
+                    </span>
+                    )
+                  </li>
+                </ul>
+              </div>
+
+              <div className="border-t border-slate-800/80 pt-4">
+                <span className="font-semibold text-white">Intervalos de Confianza (95% de confianza):</span>
+                <p className="mt-1">
+                  Estimación estadística del tiempo de resistencia esperado ante ataques de fuerza bruta:
+                </p>
+                <ul className="list-disc list-inside mt-2 space-y-1 text-slate-300">
+                  <li>
+                    AES-256: [
+                    <span className="font-mono text-cyan-300">
+                      {Number(aes95Val.i_c_inferior || 0).toFixed(2)}s
+                    </span>
+                    ,{" "}
+                    <span className="font-mono text-cyan-300">
+                      {Number(aes95Val.i_c_superior || 0).toFixed(2)}s
+                    </span>
+                    ]
+                  </li>
+                  <li>
+                    RSA-2048: [
+                    <span className="font-mono text-cyan-300">
+                      {Number(rsa95Val.i_c_inferior || 0).toFixed(4)}s
+                    </span>
+                    ,{" "}
+                    <span className="font-mono text-cyan-300">
+                      {Number(rsa95Val.i_c_superior || 0).toFixed(4)}s
+                    </span>
+                    ]
+                  </li>
+                </ul>
+              </div>
+
+              <div className="border-t border-slate-800/80 pt-4">
+                <span className="font-semibold text-white">Prueba Kruskal-Wallis (Valores Críticos):</span>
+                <p className="mt-1">
+                  Evaluación de significancia estadística para la variabilidad del tiempo de ataque:
+                </p>
+                <p className="mt-1 text-slate-300">
+                  Estadístico $H$:{" "}
+                  <span className="text-cyan-300 font-mono font-semibold">
+                    {Number(kwTime.estad_stico || 0).toFixed(2)}
+                  </span>{" "}
+                  | Valor p:{" "}
+                  <span className="text-cyan-300 font-mono font-semibold">
+                    {Number(kwTime.p_valor || 0).toExponential(3)}
+                  </span>
+                  .
+                </p>
+                <p className="mt-1 text-emerald-400 font-bold">
+                  ✔ {kwTime.interpretaci_n || "Diferencias significativas confirmadas"}
+                </p>
+              </div>
+            </div>
+          </VisualPanel>
+        </div>
+
+        {/* Ranking y Hallazgos */}
+        <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+          {/* Ranking de Algoritmos */}
+          <VisualPanel
+            title="Ranking de Resistencia"
+            subtitle="Robustez empírica frente a ataques de fuerza bruta"
+          >
+            <div className="mt-4 space-y-3">
+              {[
+                {
+                  rank: 1,
+                  name: "AES-256",
+                  desc: "Máxima seguridad. 0% tasa de éxito y tiempo de crackeo de 162.19 segundos promedio.",
+                  style: "border-emerald-500/20 bg-emerald-500/5 text-emerald-300",
+                  number: "bg-emerald-500/20 text-emerald-300",
+                },
+                {
+                  rank: 2,
+                  name: "SHA-256",
+                  desc: "Seguridad alta. Tasa de éxito del 33.33% y tiempo de crackeo de 7.49 segundos promedio.",
+                  style: "border-cyan-500/20 bg-cyan-500/5 text-cyan-300",
+                  number: "bg-cyan-500/20 text-cyan-300",
+                },
+                {
+                  rank: 3,
+                  name: "MD5",
+                  desc: "Seguridad intermedia. Tasa de éxito del 33.33% y tiempo de crackeo de 7.77 segundos promedio.",
+                  style: "border-amber-500/20 bg-amber-500/5 text-amber-300",
+                  number: "bg-amber-500/20 text-amber-300",
+                },
+                {
+                  rank: 4,
+                  name: "RSA-2048",
+                  desc: "Vulnerabilidad crítica. Tasa de éxito del 55.56% y tiempo de crackeo de 0.91 segundos promedio.",
+                  style: "border-rose-500/20 bg-rose-500/5 text-rose-300",
+                  number: "bg-rose-500/20 text-rose-300",
+                },
+              ].map((item) => (
+                <div key={item.name} className={`flex items-start gap-3 rounded-2xl border p-3 ${item.style}`}>
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${item.number}`}>
+                    {item.rank}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">{item.name}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 leading-5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </VisualPanel>
+
+          {/* Hallazgos de la investigación */}
+          <VisualPanel
+            title="Hallazgos de la Investigación"
+            subtitle="Conclusiones principales de la investigación respaldadas por el análisis de datos"
+          >
+            <div className="mt-4 space-y-4">
+              <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4">
+                <p className="text-sm font-semibold text-white flex items-center gap-2">
+                  <span className="text-emerald-400 text-base">🛡</span> AES-256 es Inquebrantable en Pruebas
+                </p>
+                <p className="text-xs text-slate-400 mt-1.5 leading-5">
+                  El cifrado simétrico AES-256 mantuvo una tasa de éxito de ataque del 0% en todas las ejecuciones.
+                  A pesar del elevado rendimiento del motor de ataque, el enorme espacio de búsqueda de la clave de 256 bits (1.16e77 combinaciones teóricas) imposibilita la ruptura computacional.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4">
+                <p className="text-sm font-semibold text-white flex items-center gap-2">
+                  <span className="text-rose-400 text-base">⚠️</span> RSA-2048 presenta Debilidad Crítica
+                </p>
+                <p className="text-xs text-slate-400 mt-1.5 leading-5">
+                  El algoritmo RSA-2048 fue el más vulnerable de los evaluados, cediendo ante el 55.56% de las simulaciones y siendo quebrado en 0.908 segundos promedio. Esto ilustra la susceptibilidad del cifrado asimétrico ante diccionarios cuando no se implementa una aleatorización de relleno (padding) óptima.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4">
+                <p className="text-sm font-semibold text-white flex items-center gap-2">
+                  <span className="text-amber-400 text-base">⚡</span> Equivalencia de Robustez en Hashings
+                </p>
+                <p className="text-xs text-slate-400 mt-1.5 leading-5">
+                  SHA-256 y MD5 compartieron una tasa de éxito idéntica del 33.33%. El tiempo de ruptura de SHA-256 (~7.49s) fue ligeramente menor que el de MD5 (~7.77s) debido a que su tamaño de ciphertext (bloque de 64 bytes) optimiza ciertos vectores de hashing paralelo, aunque SHA-256 es teóricamente mucho más robusto que MD5 ante colisiones.
+                </p>
+              </div>
+            </div>
+          </VisualPanel>
+        </div>
+
+        {/* Accesos Directos de Navegación */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              href: "/algoritmos",
+              title: "Módulo Algoritmos",
+              desc: "Rendimiento y consumo de hardware de cifrado.",
+              color: "hover:border-cyan-400/30 group",
+              icon: "💻",
+              index: "01",
+            },
+            {
+              href: "/fuerza-bruta",
+              title: "Módulo Ataques",
+              desc: "Coste computacional e intentos simulados.",
+              color: "hover:border-emerald-400/30 group",
+              icon: "💥",
+              index: "02",
+            },
+            {
+              href: "/probabilidad",
+              title: "Módulo Probabilidad",
+              desc: "Modelado probabilístico y rango de confianza.",
+              color: "hover:border-fuchsia-400/30 group",
+              icon: "📊",
+              index: "03",
+            },
+            {
+              href: "/simulacion",
+              title: "Módulo Simulación",
+              desc: "Pruebas de ataques interactivos en vivo.",
+              color: "hover:border-amber-400/30 group",
+              icon: "🔬",
+              index: "04",
+            },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`rounded-2xl border border-white/10 bg-slate-900/60 p-4 transition ${item.color}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-2xl">{item.icon}</span>
+                <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest group-hover:text-cyan-300 transition">
+                  {item.index} ↗
+                </span>
+              </div>
+              <h4 className="mt-3 font-semibold text-white text-sm">{item.title}</h4>
+              <p className="mt-1 text-[11px] text-slate-400 leading-4">{item.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </DashboardShell>
+  );
+}

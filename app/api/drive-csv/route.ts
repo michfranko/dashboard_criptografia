@@ -1,4 +1,4 @@
-/*import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 function extractDriveFileId(input: string): string | null {
   const normalized = input.trim();
@@ -81,4 +81,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-*/

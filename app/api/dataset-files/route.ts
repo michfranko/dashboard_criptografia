@@ -1,4 +1,4 @@
-/*import { promises as fs } from "fs";
+import { promises as fs } from "fs";
 import path from "path";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -7,13 +7,13 @@ const DEFAULT_DRIVE_FOLDER_URL =
 
 function getCandidateDirectories() {
   const cwd = process.cwd();
-  const projectRoot = path.resolve(cwd);
-  const parentRoot = path.resolve(projectRoot, "..");
+  const projectRoot = path.resolve(/*turbopackIgnore: true*/ cwd);
+  const parentRoot = path.resolve(/*turbopackIgnore: true*/ projectRoot, "..");
 
   return [
-    path.join(projectRoot, "crypto_analysis_output"),
-    path.join(parentRoot, "crypto_analysis_output"),
-    path.join(projectRoot, "..", "crypto_analysis_output"),
+    path.join(/*turbopackIgnore: true*/ projectRoot, "crypto_analysis_output"),
+    path.join(/*turbopackIgnore: true*/ parentRoot, "crypto_analysis_output"),
+    path.join(/*turbopackIgnore: true*/ projectRoot, "..", "crypto_analysis_output"),
   ];
 }
 
@@ -147,4 +147,4 @@ export async function GET(request: NextRequest) {
     source: "none",
     message: message ?? "No se encontraron archivos CSV.",
   });
-}*/
+}
