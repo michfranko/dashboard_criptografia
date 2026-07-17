@@ -1,18 +1,43 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  Shield,
+  Zap,
+  Cpu,
+  Database,
+  Lock,
+  Hash,
+  Clock,
+  Activity,
+  FileText,
+  Download,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  StopCircle
+} from "lucide-react";
 import DashboardShell from "../components/dashboard-shell";
 import MetricCard from "../components/metric-card";
 import VisualPanel from "../components/visual-panel";
@@ -34,16 +59,14 @@ import {
   attackAes,
   attackHash,
   attackRsa,
+  AttackStatus,
 } from "./attack-simulations";
-import { SimulationRecord, SimulationStorage } from "./simulation-storage";
+import { SimulationRecord, SimulationStorage, DASHBOARD_VERSION, SIMULATOR_VERSION } from "./simulation-storage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type LabMode = "crypto" | "attack" | "history";
-type SortField = keyof Pick<
-  SimulationRecord,
-  "timestamp" | "algorithm" | "operation" | "status" | "executionTimeMs" | "attackDurationMs" | "attempts" | "attemptsPerSecond" | "progress"
->;
+type SortField = keyof SimulationRecord;
 type SortDir = "asc" | "desc";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -54,6 +77,48 @@ const algorithms = [
   { value: "md5" as const, label: "MD5", description: "Hash irreversible de 128 bits." },
   { value: "sha256" as const, label: "SHA-256", description: "Hash irreversible de 256 bits." },
 ];
+
+const ALGO_TECH_INFO: Record<Algorithm, {
+  type: string;
+  keyLength: string;
+  blockSize: string;
+  mode: string;
+  complexity: string;
+  securityLevel: string;
+}> = {
+  aes: {
+    type: "Simétrico (Bloque)",
+    keyLength: "256 bits",
+    blockSize: "128 bits (16 bytes)",
+    mode: "GCM (Galois/Counter Mode)",
+    complexity: "2^256 (O(2^n))",
+    securityLevel: "Muy alto (Estándar militar)",
+  },
+  rsa: {
+    type: "Asimétrico (Clave pública)",
+    keyLength: "2048 bits",
+    blockSize: "Variable (Máx 190 bytes con OAEP)",
+    mode: "OAEP (SHA-256)",
+    complexity: "Basada en factorización (GNFS)",
+    securityLevel: "Alto (Estándar corporativo)",
+  },
+  md5: {
+    type: "Hash (Digest)",
+    keyLength: "N/A",
+    blockSize: "512 bits (Mensaje interno)",
+    mode: "Merkle-Damgård",
+    complexity: "2^128 (Colisiones: 2^18)",
+    securityLevel: "Obsoleto (Solo integridad básica)",
+  },
+  sha256: {
+    type: "Hash (Digest)",
+    keyLength: "N/A",
+    blockSize: "512 bits (Mensaje interno)",
+    mode: "Merkle-Damgård",
+    complexity: "2^256 (Resistencia pre-imagen)",
+    securityLevel: "Alto (Estándar actual)",
+  },
+};
 
 const attackStrategies: { value: AttackStrategy; label: string; description: string }[] = [
   { value: "dictionary", label: "Diccionario", description: "Busca coincidencias en una lista de valores comunes." },
@@ -66,13 +131,14 @@ const defaultCharset = [
   "q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9",
 ];
 
-// Default limits per algorithm (used when user does not override)
 const ALGO_DEFAULTS: Record<Algorithm, { maxAttempts: number; maxDurationMs: number }> = {
   aes:    { maxAttempts: 50_000,     maxDurationMs: 300_000 },  // 5 min
   rsa:    { maxAttempts: 500_000,    maxDurationMs: 600_000 },  // 10 min
   md5:    { maxAttempts: 1_000_000,  maxDurationMs: 180_000 },  // 3 min
   sha256: { maxAttempts: 1_000_000,  maxDurationMs: 180_000 },  // 3 min
 };
+
+const ITEMS_PER_PAGE = 25;
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -96,6 +162,7 @@ function formatSearchSize(value: number | bigint): string {
 }
 
 function snippetOf(value: string, len = 40): string {
+  if (!value) return "—";
   return value.length <= len ? value : `${value.slice(0, len - 3)}…`;
 }
 
@@ -105,6 +172,14 @@ function algorithmKeyOf(alg: Algorithm): string {
 
 function algorithmLabelOf(alg: Algorithm): string {
   return algorithms.find((a) => a.value === alg)?.label ?? alg.toUpperCase();
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -137,18 +212,25 @@ export default function SimulacionPage() {
   const [attackTimeline, setAttackTimeline] = useState<AttackSnapshot[]>([]);
   const [attackResult, setAttackResult] = useState<AttackResult | null>(null);
   const [attackError, setAttackError] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // ── History tab ───────────────────────────────────────────────────────────
-  const [history, setHistory] = useState<SimulationRecord[]>(() =>
-    typeof window !== "undefined" ? SimulationStorage.getAll() : [],
-  );
+  const [history, setHistory] = useState<SimulationRecord[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHistory(SimulationStorage.getAll());
+    }
+  }, []);
+
   const [historySearch, setHistorySearch] = useState("");
   const [historyAlgoFilter, setHistoryAlgoFilter] = useState<Algorithm | "all">("all");
   const [historyOpFilter, setHistoryOpFilter] = useState<"all" | "encryption" | "decryption" | "attack">("all");
   const [historyStatusFilter, setHistoryStatusFilter] = useState<"all" | "success" | "failed">("all");
   const [sortField, setSortField] = useState<SortField>("timestamp");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [currentPage, setCurrentPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const inputBytes = useMemo(() => new TextEncoder().encode(input).length, [input]);
@@ -175,6 +257,7 @@ export default function SimulacionPage() {
     setAttackTimeline([]);
     setAttackResult(null);
     setAttackError(null);
+    setShowSummary(false);
   }, []);
 
   const changeAlgorithm = useCallback(
@@ -193,10 +276,13 @@ export default function SimulacionPage() {
 
   const attackUpdate = useCallback((snapshot: AttackSnapshot) => {
     setAttackSnapshot(snapshot);
-    setAttackTimeline((prev) => [...prev.slice(-99), snapshot]);
+    setAttackTimeline((prev) => {
+      const next = [...prev, snapshot];
+      return next.length > 300 ? next.slice(-300) : next;
+    });
   }, []);
 
-  // ── Sort helper for history ───────────────────────────────────────────────
+  // ── Sort & Filter & Paging ───────────────────────────────────────────────
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -207,33 +293,33 @@ export default function SimulacionPage() {
     }
   };
 
-  const sortIndicator = (field: SortField) => {
-    if (sortField !== field) return " ↕";
-    return sortDir === "asc" ? " ↑" : " ↓";
-  };
-
-  // ── Filtered & sorted history ─────────────────────────────────────────────
-
   const filteredHistory = useMemo(() => {
     const q = historySearch.toLowerCase();
     let records = history.filter((r) => {
       const matchesSearch =
         !q ||
-        r.originalText.toLowerCase().includes(q) ||
+        r.id.toLowerCase().includes(q) ||
         r.algorithm.toLowerCase().includes(q) ||
-        r.id.toLowerCase().includes(q);
+        (r.originalText && r.originalText.toLowerCase().includes(q));
       const matchesAlgo = historyAlgoFilter === "all" || r.algorithmKey === historyAlgoFilter;
       const matchesOp = historyOpFilter === "all" || r.operation === historyOpFilter;
-      const matchesStatus = historyStatusFilter === "all" || r.status === historyStatusFilter;
+
+      let rStatus: "success" | "failed" = "success";
+      if (r.operation === "attack") rStatus = r.attackSuccess ? "success" : "failed";
+      else rStatus = r.status as "success" | "failed";
+
+      const matchesStatus = historyStatusFilter === "all" || rStatus === historyStatusFilter;
       return matchesSearch && matchesAlgo && matchesOp && matchesStatus;
     });
 
     records = records.sort((a, b) => {
-      let va: string | number = a[sortField] as string | number;
-      let vb: string | number = b[sortField] as string | number;
+      let va = a[sortField];
+      let vb = b[sortField];
+
+      if (va === undefined || va === null) return sortDir === "asc" ? -1 : 1;
+      if (vb === undefined || vb === null) return sortDir === "asc" ? 1 : -1;
+
       if (typeof va === "string" && typeof vb === "string") {
-        va = va.toLowerCase();
-        vb = vb.toLowerCase();
         return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
       }
       return sortDir === "asc" ? (va as number) - (vb as number) : (vb as number) - (va as number);
@@ -242,36 +328,40 @@ export default function SimulacionPage() {
     return records;
   }, [history, historySearch, historyAlgoFilter, historyOpFilter, historyStatusFilter, sortField, sortDir]);
 
-  // ── Attack statistics ─────────────────────────────────────────────────────
+  const totalPages = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
+  const pagedHistory = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredHistory.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredHistory, currentPage]);
 
-  const attackStats = useMemo(() => {
-    if (!attackSnapshot) return null;
-    const space = attackSnapshot.searchSize;
-    const log2Space =
-      typeof space === "bigint"
-        ? Math.round(space.toString().length * 3.32)
-        : Math.log2(space);
-    const prob =
-      typeof space === "bigint"
-        ? (1 / Number(space)).toExponential(2)
-        : (1 / space).toExponential(2);
-    return { log2Space, probability: prob };
-  }, [attackSnapshot]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [historySearch, historyAlgoFilter, historyOpFilter, historyStatusFilter]);
 
   // ── Chart data ────────────────────────────────────────────────────────────
 
-  const chartData = useMemo(
-    () =>
-      attackTimeline.map((s, i) => ({
-        step: i + 1,
-        progress: +s.progress.toFixed(2),
-        speed: +s.speedPerSecond.toFixed(1),
-        cpu: +s.cpuUtilization.toFixed(1),
-        memory: +(s.memoryBytes / 1024 / 1024).toFixed(2),
-        elapsed: +(s.elapsedMs / 1000).toFixed(1),
-      })),
-    [attackTimeline],
-  );
+  const chartData = useMemo(() => {
+    return attackTimeline.map((s, i) => ({
+      step: i + 1,
+      progress: +s.progress.toFixed(2),
+      speed: +s.speedPerSecond.toFixed(1),
+      cpu: +s.cpuUtilization.toFixed(1),
+      memory: +(s.memoryBytes / 1024 / 1024).toFixed(2),
+      elapsed: +(s.elapsedMs / 1000).toFixed(1),
+      attempts: s.attempts,
+    }));
+  }, [attackTimeline]);
+
+  const spaceExplorationData = useMemo(() => {
+    if (!attackSnapshot) return [];
+    const explored = attackSnapshot.attempts;
+    const total = typeof attackSnapshot.searchSize === "bigint" ? Number(attackSnapshot.searchSize) : attackSnapshot.searchSize;
+    const remaining = Math.max(0, total - explored);
+    return [
+      { name: "Explorado", value: explored, color: "#22d3ee" },
+      { name: "Restante", value: remaining, color: "#1e293b" },
+    ];
+  }, [attackSnapshot]);
 
   // ────────────────────────────────────────────────────────────────────────────
   // Handlers
@@ -307,7 +397,7 @@ export default function SimulacionPage() {
         opResult = { ...operation, durationMs: performance.now() - started };
       } else if (algorithm === "rsa") {
         if (inputBytes > 190) {
-          setError("RSA-OAEP 2048 con SHA-256 admite hasta 190 bytes. Usa AES para textos más largos.");
+          setError("RSA-OAEP 2048 admite hasta 190 bytes. Usa AES para textos más largos.");
           setLoading(false);
           return;
         }
@@ -327,12 +417,7 @@ export default function SimulacionPage() {
           durationMs: performance.now() - started,
           reversible: true,
           theoreticalComplexity: "Basada en factorización de 2048 bits",
-          details: [
-            "Clave pública RSA de 2048 bits",
-            "Exponente público 65537",
-            "OAEP con SHA-256",
-            "La clave privada se conserva localmente en memoria",
-          ],
+          details: ["Clave RSA 2048", "OAEP con SHA-256"],
           metadata: { modulusBits: 2048 },
         };
       } else {
@@ -349,61 +434,86 @@ export default function SimulacionPage() {
           durationMs: performance.now() - started,
           reversible: false,
           theoreticalComplexity: algorithm === "md5" ? "2^128" : "2^256",
-          details: [
-            `Salida fija de ${algorithm === "md5" ? 128 : 256} bits`,
-            "Función unidireccional sin descifrado práctico",
-            "Un cambio mínimo modifica el resumen drásticamente",
-            "La recuperación solo es posible por búsqueda exhaustiva o diccionario",
-          ],
+          details: [`Salida ${algorithm === "md5" ? 128 : 256} bits`],
           metadata: { hashAlgorithm: algorithm },
         };
       }
 
       if (opResult) {
         setResult(opResult);
-        const keyBits =
-          algorithm === "aes"
-            ? 256
-            : algorithm === "rsa"
-            ? 2048
-            : algorithm === "md5"
-            ? 128
-            : 256;
-        const searchSpace =
-          algorithm === "aes"
-            ? (BigInt(2) ** BigInt(256)).toString()
-            : algorithm === "rsa"
-            ? (BigInt(2) ** BigInt(2048)).toString()
-            : algorithm === "md5"
-            ? (BigInt(2) ** BigInt(128)).toString()
-            : (BigInt(2) ** BigInt(256)).toString();
-        const log2ss = algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256;
+        const keyBits = algorithm === "aes" ? 256 : algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256;
+        const searchSpace = algorithm === "aes" ? (BigInt(2) ** BigInt(256)).toString() : algorithm === "rsa" ? (BigInt(2) ** BigInt(2048)).toString() : algorithm === "md5" ? (BigInt(2) ** BigInt(128)).toString() : (BigInt(2) ** BigInt(256)).toString();
 
         SimulationStorage.save({
+          versionDashboard: DASHBOARD_VERSION,
+          versionSimulador: SIMULATOR_VERSION,
           algorithm: opResult.algorithmLabel,
           algorithmKey: algorithmKeyOf(algorithm),
           operation: "encryption",
-          originalText: input,
-          messageSize: inputBytes,
+          keyLengthBits: keyBits,
+          blockSize: algorithm === "aes" ? 16 : 0,
+          hashLength: algorithm === "md5" ? 128 : algorithm === "sha256" ? 256 : 0,
+          encoding: "UTF-8",
+          charset: "N/A",
+          passwordLength: algorithm === "aes" ? password.length : 0,
+          inputLengthBytes: inputBytes,
+          inputLengthBits: inputBytes * 8,
+          estimatedKeyspace: searchSpace,
           ciphertext,
-          ciphertextSize: opResult.outputBytes,
-          keyLength: keyBits,
+          ciphertextLength: opResult.outputBytes,
+          ciphertextFormat: "Base64/Hex",
+          encryptionSuccess: true,
+          decryptionSuccess: false,
+          outputLength: opResult.outputBytes,
+          expansionRatio: +(opResult.outputBytes / Math.max(1, inputBytes)).toFixed(4),
+          compressionRatio: +(inputBytes / Math.max(1, opResult.outputBytes)).toFixed(4),
+          integrityVerified: algorithm === "aes",
           executionTimeMs: opResult.durationMs,
-          attackDurationMs: 0,
+          executionTimeSeconds: +(opResult.durationMs / 1000).toFixed(6),
+          throughputBytesSec: +(inputBytes / (opResult.durationMs / 1000 || 0.001)).toFixed(2),
+          cpuUsagePercent: 0,
+          averageCpuUsage: 0,
+          peakCpuUsage: 0,
+          memoryUsageMb: 0,
+          peakMemoryUsageMb: 0,
+          latencyMs: opResult.durationMs,
+          attackStarted: "",
+          attackFinished: "",
+          attackDurationSeconds: 0,
+          attackStatus: "N/A",
           attempts: 1,
           attemptsPerSecond: 0,
-          cpuUtilization: 0,
-          memoryBytes: 0,
-          status: "success",
+          maxAttempts: 1,
+          currentProgressPercent: 100,
+          estimatedRemainingTime: 0,
+          keysTested: 1,
+          keyspaceSize: searchSpace,
+          currentCandidate: "",
+          foundKey: "",
+          foundIteration: 0,
+          attackSuccess: false,
+          recoveredPlaintext: "",
+          resultStatus: "Éxito",
+          errorMessage: "",
+          notes: opResult.details.join("; "),
+          // Legacy
+          originalText: input,
+          messageSize: inputBytes,
+          ciphertextSize: opResult.outputBytes,
+          keyLength: keyBits,
+          attackDurationMs: 0,
           progress: 100,
+          memoryBytes: 0,
+          cpuUtilization: 0,
+          status: "success",
           searchSpace,
-          log2SearchSpace: log2ss,
-          successProbability: (1 / Number(searchSpace.slice(0, 15))).toExponential(2),
+          log2SearchSpace: algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256,
+          successProbability: "1.0",
         });
         refreshHistory();
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No fue posible completar la operación.");
+      setError(cause instanceof Error ? cause.message : "Error fatal.");
     } finally {
       setLoading(false);
     }
@@ -419,7 +529,7 @@ export default function SimulacionPage() {
     try {
       let plaintext = "";
       if (algorithm === "aes") {
-        if (!decryptPassword) throw new Error("Escribe la contraseña para intentar descifrar.");
+        if (!decryptPassword) throw new Error("Contraseña requerida.");
         plaintext = await decryptAes(result.output, decryptPassword);
       } else if (algorithm === "rsa" && rsaPrivateKey) {
         plaintext = await decryptRsa(result.output, rsaPrivateKey);
@@ -427,49 +537,137 @@ export default function SimulacionPage() {
       setDecryptedText(plaintext);
       const elapsed = performance.now() - started;
       SimulationStorage.save({
+        versionDashboard: DASHBOARD_VERSION,
+        versionSimulador: SIMULATOR_VERSION,
         algorithm: algorithmLabelOf(algorithm),
         algorithmKey: algorithmKeyOf(algorithm),
         operation: "decryption",
-        originalText: algorithm === "aes" ? "Contraseña manual" : "Clave privada",
-        messageSize: plaintext.length,
+        keyLengthBits: algorithm === "rsa" ? 2048 : 256,
+        blockSize: algorithm === "aes" ? 16 : 0,
+        hashLength: 0,
+        encoding: "UTF-8",
+        charset: "N/A",
+        passwordLength: algorithm === "aes" ? decryptPassword.length : 0,
+        inputLengthBytes: result.outputBytes,
+        inputLengthBits: result.outputBytes * 8,
+        estimatedKeyspace: "1",
         ciphertext: result.output,
-        ciphertextSize: result.outputBytes,
-        recoveredText: plaintext,
-        keyLength: algorithm === "rsa" ? 2048 : 256,
+        ciphertextLength: result.outputBytes,
+        ciphertextFormat: "Base64/Hex",
+        encryptionSuccess: false,
+        decryptionSuccess: true,
+        outputLength: plaintext.length,
+        expansionRatio: 1,
+        compressionRatio: 1,
+        integrityVerified: true,
         executionTimeMs: elapsed,
-        attackDurationMs: 0,
+        executionTimeSeconds: elapsed / 1000,
+        throughputBytesSec: plaintext.length / (elapsed / 1000 || 0.001),
+        cpuUsagePercent: 0,
+        averageCpuUsage: 0,
+        peakCpuUsage: 0,
+        memoryUsageMb: 0,
+        peakMemoryUsageMb: 0,
+        latencyMs: elapsed,
+        attackStarted: "",
+        attackFinished: "",
+        attackDurationSeconds: 0,
+        attackStatus: "N/A",
         attempts: 1,
         attemptsPerSecond: 0,
-        cpuUtilization: 0,
-        memoryBytes: 0,
-        status: "success",
+        maxAttempts: 1,
+        currentProgressPercent: 100,
+        estimatedRemainingTime: 0,
+        keysTested: 1,
+        keyspaceSize: "1",
+        currentCandidate: "",
+        foundKey: "",
+        foundIteration: 0,
+        attackSuccess: false,
+        recoveredPlaintext: plaintext,
+        resultStatus: "Éxito",
+        errorMessage: "",
+        notes: "",
+        // Legacy
+        originalText: "Descifrado",
+        messageSize: plaintext.length,
+        ciphertextSize: result.outputBytes,
+        keyLength: algorithm === "rsa" ? 2048 : 256,
+        attackDurationMs: 0,
         progress: 100,
+        memoryBytes: 0,
+        cpuUtilization: 0,
+        status: "success",
         searchSpace: "1",
         log2SearchSpace: 0,
         successProbability: "1",
       });
       refreshHistory();
     } catch {
-      setDecryptError("No se pudo descifrar: la clave es incorrecta o los datos fueron alterados.");
+      setDecryptError("Clave incorrecta.");
       SimulationStorage.save({
+        versionDashboard: DASHBOARD_VERSION,
+        versionSimulador: SIMULATOR_VERSION,
         algorithm: algorithmLabelOf(algorithm),
         algorithmKey: algorithmKeyOf(algorithm),
         operation: "decryption",
-        originalText:
-          algorithm === "aes" ? `Contraseña: ${decryptPassword}` : "Clave privada",
-        messageSize: 0,
+        keyLengthBits: algorithm === "rsa" ? 2048 : 256,
+        blockSize: algorithm === "aes" ? 16 : 0,
+        hashLength: 0,
+        encoding: "UTF-8",
+        charset: "N/A",
+        passwordLength: algorithm === "aes" ? decryptPassword.length : 0,
+        inputLengthBytes: result.outputBytes,
+        inputLengthBits: result.outputBytes * 8,
+        estimatedKeyspace: "1",
         ciphertext: result.output,
-        ciphertextSize: result.outputBytes,
-        keyLength: algorithm === "rsa" ? 2048 : 256,
+        ciphertextLength: result.outputBytes,
+        ciphertextFormat: "Base64/Hex",
+        encryptionSuccess: false,
+        decryptionSuccess: false,
+        outputLength: 0,
+        expansionRatio: 0,
+        compressionRatio: 0,
+        integrityVerified: false,
         executionTimeMs: performance.now() - started,
-        attackDurationMs: 0,
+        executionTimeSeconds: (performance.now() - started) / 1000,
+        throughputBytesSec: 0,
+        cpuUsagePercent: 0,
+        averageCpuUsage: 0,
+        peakCpuUsage: 0,
+        memoryUsageMb: 0,
+        peakMemoryUsageMb: 0,
+        latencyMs: performance.now() - started,
+        attackStarted: "",
+        attackFinished: "",
+        attackDurationSeconds: 0,
+        attackStatus: "N/A",
         attempts: 1,
         attemptsPerSecond: 0,
-        cpuUtilization: 0,
-        memoryBytes: 0,
-        status: "failed",
+        maxAttempts: 1,
+        currentProgressPercent: 0,
+        estimatedRemainingTime: 0,
+        keysTested: 1,
+        keyspaceSize: "1",
+        currentCandidate: "",
+        foundKey: "",
+        foundIteration: 0,
+        attackSuccess: false,
+        recoveredPlaintext: "",
+        resultStatus: "Fallo",
+        errorMessage: "Clave incorrecta",
+        notes: "",
+        // Legacy
+        originalText: "Fallo descifrado",
+        messageSize: 0,
+        ciphertextSize: result.outputBytes,
+        keyLength: algorithm === "rsa" ? 2048 : 256,
+        attackDurationMs: 0,
         progress: 0,
-        searchSpace: "0",
+        memoryBytes: 0,
+        cpuUtilization: 0,
+        status: "failed",
+        searchSpace: "1",
         log2SearchSpace: 0,
         successProbability: "0",
       });
@@ -479,26 +677,17 @@ export default function SimulacionPage() {
     }
   };
 
-  const copyOutput = async () => {
-    if (!result) return;
-    await navigator.clipboard.writeText(result.output);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
-  };
-
   const startAttack = async () => {
     if (!attackValue) {
-      setAttackError("Ingresa un valor o texto para iniciar la simulación.");
+      setAttackError("Ingresa un valor para la simulación.");
       return;
     }
-
-    // For AES/RSA validate pre-requisites
     if (algorithm === "aes" && (!result || result.algorithmLabel !== "AES-256-GCM")) {
-      setAttackError("Genera primero el paquete AES en la sección de cifrado.");
+      setAttackError("Genera primero el paquete AES.");
       return;
     }
     if (algorithm === "rsa" && !rsaPublicJwk) {
-      setAttackError("Genera primero la clave RSA en la sección de cifrado.");
+      setAttackError("Genera primero la clave RSA.");
       return;
     }
 
@@ -508,15 +697,13 @@ export default function SimulacionPage() {
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    const startIso = new Date().toISOString();
 
     const options: AttackOptions = {
       strategy: attackStrategy,
       maxAttempts: customMaxAttempts,
       maxDurationMs: customMaxDurationMs,
-      charset:
-        algorithm === "md5" || algorithm === "sha256"
-          ? Array.from(new Set([...attackValue])).concat(defaultCharset).slice(0, 36)
-          : defaultCharset,
+      charset: (algorithm === "md5" || algorithm === "sha256") ? Array.from(new Set([...attackValue])).concat(defaultCharset).slice(0, 36) : defaultCharset,
       maxCandidateLength: algorithm === "aes" ? Math.min(6, attackValue.length || 6) : 5,
       abortSignal: controller.signal,
       stallTimeoutMs: 15_000,
@@ -533,106 +720,128 @@ export default function SimulacionPage() {
       }
 
       setAttackResult(attack);
+      setShowSummary(true);
 
-      const log2Space =
-        attack.searchSize > 0
-          ? typeof attack.searchSize === "bigint"
-            ? Math.round(attack.searchSize.toString().length * 3.32)
-            : Math.log2(attack.searchSize)
-          : 0;
-
-      const ciphertextForRecord =
-        algorithm === "aes"
-          ? result?.output ?? ""
-          : algorithm === "rsa"
-          ? "" // no individual ciphertext per attack
-          : await hashText(algorithm, attackValue);
+      const ciphertextForRecord = algorithm === "aes" ? result?.output ?? "" : (algorithm === "rsa" ? "" : await hashText(algorithm, attackValue));
 
       SimulationStorage.save({
+        versionDashboard: DASHBOARD_VERSION,
+        versionSimulador: SIMULATOR_VERSION,
         algorithm: algorithmLabelOf(algorithm),
         algorithmKey: algorithmKeyOf(algorithm),
         operation: "attack",
-        originalText: algorithm === "aes" ? input : attackValue,
-        messageSize: attackValue.length,
+        keyLengthBits: algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256,
+        blockSize: algorithm === "aes" ? 16 : 0,
+        hashLength: algorithm === "md5" ? 128 : algorithm === "sha256" ? 256 : 0,
+        encoding: "UTF-8",
+        charset: options.charset?.join("") || "Default",
+        passwordLength: attackValue.length,
+        inputLengthBytes: attackValue.length,
+        inputLengthBits: attackValue.length * 8,
+        estimatedKeyspace: attack.searchSize.toString(),
         ciphertext: ciphertextForRecord,
-        ciphertextSize:
-          algorithm === "aes"
-            ? result?.outputBytes ?? 0
-            : algorithm === "md5"
-            ? 16
-            : algorithm === "sha256"
-            ? 32
-            : 256,
-        recoveredText: attack.foundCandidate,
-        keyLength:
-          algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256,
+        ciphertextLength: ciphertextForRecord.length,
+        ciphertextFormat: "Base64/Hex",
+        encryptionSuccess: false,
+        decryptionSuccess: false,
+        outputLength: attack.foundCandidate?.length || 0,
+        expansionRatio: 1,
+        compressionRatio: 1,
+        integrityVerified: algorithm === "aes",
         executionTimeMs: attack.elapsedMs,
-        attackDurationMs: attack.elapsedMs,
+        executionTimeSeconds: attack.elapsedMs / 1000,
+        throughputBytesSec: attack.attempts / (attack.elapsedMs / 1000 || 0.001),
+        cpuUsagePercent: attack.cpuUtilization,
+        averageCpuUsage: attack.cpuUtilization, // simplification
+        peakCpuUsage: attack.peakCpuUtilization,
+        memoryUsageMb: attack.memoryBytes / 1024 / 1024,
+        peakMemoryUsageMb: attack.peakMemoryBytes / 1024 / 1024,
+        latencyMs: attack.elapsedMs / Math.max(1, attack.attempts),
+        attackStarted: startIso,
+        attackFinished: new Date().toISOString(),
+        attackDurationSeconds: attack.elapsedMs / 1000,
+        attackStatus: attack.attackStatus as any,
         attempts: attack.attempts,
         attemptsPerSecond: attack.speedPerSecond,
-        cpuUtilization: attack.cpuUtilization,
-        memoryBytes: attack.memoryBytes,
-        status: attack.found ? "success" : "failed",
+        maxAttempts: customMaxAttempts,
+        currentProgressPercent: attack.progress,
+        estimatedRemainingTime: attack.estimatedRemainingMs,
+        keysTested: attack.attempts,
+        keyspaceSize: attack.searchSize.toString(),
+        currentCandidate: attack.currentCandidate || "",
+        foundKey: attack.foundCandidate || "",
+        foundIteration: attack.foundIteration || 0,
+        attackSuccess: attack.found,
+        recoveredPlaintext: attack.foundCandidate || "",
+        resultStatus: attack.found ? "SUCCESS" : "FAILED",
+        errorMessage: attack.reason,
+        notes: `Estrategia: ${attackStrategy}`,
+        // Legacy
+        originalText: algorithm === "aes" ? input : attackValue,
+        messageSize: attackValue.length,
+        ciphertextSize: ciphertextForRecord.length,
+        keyLength: algorithm === "rsa" ? 2048 : 256,
+        attackDurationMs: attack.elapsedMs,
         progress: attack.progress,
+        memoryBytes: attack.memoryBytes,
+        cpuUtilization: attack.cpuUtilization,
+        status: attack.found ? "success" : "failed",
         searchSpace: attack.searchSize.toString(),
-        log2SearchSpace: log2Space,
-        successProbability:
-          attack.searchSize > 0
-            ? (1 / Number(typeof attack.searchSize === "bigint" ? attack.searchSize : attack.searchSize)).toExponential(2)
-            : "0",
+        log2SearchSpace: 0,
+        successProbability: "0",
       });
       refreshHistory();
     } catch (cause) {
-      setAttackError(
-        cause instanceof Error ? cause.message : "La simulación encontró un error inesperado.",
-      );
+      setAttackError(cause instanceof Error ? cause.message : "Error inesperado.");
     } finally {
       setLoading(false);
       abortControllerRef.current = null;
     }
   };
 
-  const stopAttack = () => {
-    abortControllerRef.current?.abort();
-  };
-
-  const deleteRecord = (id: string) => {
-    SimulationStorage.delete(id);
-    setDeleteConfirmId(null);
-    refreshHistory();
-  };
-
   // ────────────────────────────────────────────────────────────────────────────
-  // Render
+  // Render Helpers
   // ────────────────────────────────────────────────────────────────────────────
+
+  const renderStatusBadge = (status: string, success: boolean) => {
+    let color = "bg-slate-800 text-slate-400";
+    let label = status || (success ? "ÉXITO" : "FALLO");
+
+    if (status === "SUCCESS" || label === "ÉXITO") color = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+    else if (status === "FAILED" || label === "FALLO") color = "bg-rose-500/20 text-rose-400 border border-rose-500/30";
+    else if (status === "TIME_LIMIT") color = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+    else if (status === "USER_CANCELLED") color = "bg-slate-500/20 text-slate-300 border border-slate-500/30";
+
+    return (
+      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>
+        {label}
+      </span>
+    );
+  };
 
   return (
     <DashboardShell
       eyebrow="Laboratorio interactivo"
       title="Simulación criptográfica y de ataques"
-      description="Experimenta con primitivas reales y observa métricas de ejecución en cada escenario. AES y RSA respetan su resistencia; MD5 y SHA-256 solo admiten recuperación si el valor está en el espacio explorado."
+      description="Experimenta con primitivas reales y observa métricas de ejecución en tiempo real."
       badge="Web Crypto API"
     >
-      {/* ── Tab bar ── */}
-      <div className="mb-6 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2">
-        {(
-          [
-            ["crypto", "🔐 Cifrado y hashing"],
-            ["attack", "⚔️ Simulación de ataques"],
-            ["history", "📋 Historial"],
-          ] as const
-        ).map(([value, label]) => (
+      {/* ── Tabs ── */}
+      <div className="mb-6 flex gap-2 rounded-2xl border border-white/10 bg-slate-950/70 p-2">
+        {[
+          { id: "crypto", label: "Cifrado y Hashing", icon: Lock },
+          { id: "attack", label: "Ataques de Fuerza Bruta", icon: Shield },
+          { id: "history", label: "Historial de Experimentos", icon: FileText },
+        ].map((t) => (
           <button
-            key={value}
-            type="button"
-            onClick={() => setMode(value)}
-            className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
-              mode === value
-                ? "bg-cyan-400 text-slate-950"
-                : "text-slate-300 hover:bg-slate-800"
+            key={t.id}
+            onClick={() => setMode(t.id as LabMode)}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition ${
+              mode === t.id ? "bg-cyan-400 text-slate-950" : "text-slate-400 hover:bg-slate-800/50"
             }`}
           >
-            {label}
+            <t.icon className="h-4 w-4" />
+            {t.label}
           </button>
         ))}
       </div>
@@ -641,275 +850,171 @@ export default function SimulacionPage() {
           CRYPTO TAB
       ══════════════════════════════════════════════════════════════════════ */}
       {mode === "crypto" && (
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          {/* ── Left: config ── */}
-          <VisualPanel title="Configuración" subtitle="Datos procesados localmente en tu navegador">
-            <div className="space-y-4">
-              <label className="block text-sm text-slate-300">
-                <span className="mb-2 block">Algoritmo</span>
-                <select
-                  value={algorithm}
-                  onChange={(e) => changeAlgorithm(e.target.value as Algorithm)}
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
-                >
-                  {algorithms.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <span className="mt-2 block text-xs text-slate-500">
-                  {algorithms.find((o) => o.value === algorithm)?.description}
-                </span>
-              </label>
+        <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
+          <aside className="space-y-6">
+            <VisualPanel title="Configuración" icon={Database}>
+              <div className="space-y-4">
+                <label className="block text-sm">
+                  <span className="mb-2 block text-slate-400">Algoritmo</span>
+                  <select
+                    value={algorithm}
+                    onChange={(e) => changeAlgorithm(e.target.value as Algorithm)}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                  >
+                    {algorithms.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}
+                  </select>
+                </label>
 
-              <label className="block text-sm text-slate-300">
-                <span className="mb-2 flex justify-between">
-                  <span>Texto a procesar</span>
-                  <span className="text-slate-500">{inputBytes} bytes</span>
-                </span>
-                <textarea
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    resetCrypto();
-                  }}
-                  rows={7}
-                  maxLength={10000}
-                  placeholder="Escribe el contenido que deseas procesar…"
-                  className="w-full resize-y rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
-                />
-              </label>
+                <label className="block text-sm">
+                  <span className="mb-2 block text-slate-400">Mensaje de entrada</span>
+                  <textarea
+                    value={input}
+                    onChange={(e) => { setInput(e.target.value); resetCrypto(); }}
+                    rows={6}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                    placeholder="Escribe aquí..."
+                  />
+                  <span className="mt-1 block text-right text-[10px] text-slate-500 uppercase tracking-wider">{inputBytes} bytes</span>
+                </label>
 
-              {algorithm === "aes" && (
-                <div className="space-y-3 rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-4">
-                  <label className="block text-sm text-slate-300">
-                    <span className="mb-2 block">Contraseña de cifrado</span>
+                {algorithm === "aes" && (
+                  <div className="space-y-3 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
                     <input
                       type="password"
-                      autoComplete="new-password"
+                      placeholder="Contraseña (mín 8 car.)"
                       value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        resetCrypto();
-                      }}
-                      placeholder="Mínimo 8 caracteres"
-                      className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-cyan-400/60"
+                      onChange={(e) => { setPassword(e.target.value); resetCrypto(); }}
+                      className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
                     />
-                  </label>
-                  <label className="block text-sm text-slate-300">
-                    <span className="mb-2 block">Confirmar contraseña</span>
                     <input
                       type="password"
-                      autoComplete="new-password"
+                      placeholder="Confirmar contraseña"
                       value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        resetCrypto();
-                      }}
-                      className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-white outline-none focus:border-cyan-400/60"
+                      onChange={(e) => { setConfirmPassword(e.target.value); resetCrypto(); }}
+                      className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
                     />
-                  </label>
-                  <div>
-                    <div className="mb-2 flex justify-between text-xs">
-                      <span className="text-slate-400">Fortaleza estimada</span>
-                      <span className="text-cyan-200">
-                        {Math.min(100, Math.max(0, password.length * 10))}%
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                      <div
-                        className="h-full rounded-full bg-cyan-400 transition-all"
-                        style={{ width: `${Math.min(100, Math.max(0, password.length * 10))}%` }}
-                      />
-                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <button
-                type="button"
-                onClick={executeCrypto}
-                disabled={!input || loading}
-                className="w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-              >
-                {loading
-                  ? "Procesando…"
-                  : algorithm === "md5" || algorithm === "sha256"
-                  ? "Generar resumen"
-                  : "Generar resultado"}
-              </button>
-
-              {error && (
-                <p role="alert" className="rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-200">
-                  {error}
-                </p>
-              )}
-              <p className="text-xs leading-5 text-slate-500">
-                Las claves y contraseñas no se envían ni se almacenan. Si las pierdes, no es posible recuperar el contenido AES.
-              </p>
-            </div>
-          </VisualPanel>
-
-          {/* ── Right: result ── */}
-          <VisualPanel
-            title="Resultado criptográfico"
-            subtitle={result ? `${result.algorithmLabel} · operación completada` : "Esperando una operación"}
-          >
-            {!result ? (
-              <div className="flex min-h-72 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-8 text-center text-sm leading-7 text-slate-500">
-                Configura el algoritmo e inicia la operación para ver el resultado y sus métricas.
+                <button
+                  onClick={executeCrypto}
+                  disabled={loading || !input}
+                  className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 py-4 font-bold text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                >
+                  {loading ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <Zap className="h-5 w-5" />}
+                  PROCESAR AHORA
+                </button>
+                {error && <p className="text-xs text-rose-400">{error}</p>}
               </div>
-            ) : (
-              <div className="space-y-5">
-                {/* ── Key metrics row ── */}
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <MetricCard
-                    label="Mensaje"
-                    value={`${result.inputBytes.toLocaleString("es-EC")} B`}
-                    detail="Tamaño original (UTF-8)"
-                    accent="text-cyan-200"
-                  />
-                  <MetricCard
-                    label="Cifrado"
-                    value={`${result.outputBytes.toLocaleString("es-EC")} B`}
-                    detail="Tamaño de salida"
-                    accent="text-emerald-200"
-                  />
-                  <MetricCard
-                    label="Expansión"
-                    value={`${result.expansion > 0 ? "+" : ""}${result.expansion} B`}
-                    detail="Diferencia entrada/salida"
-                    accent="text-amber-200"
-                  />
-                  <MetricCard
-                    label="Tiempo"
-                    value={formatDurationMs(result.durationMs)}
-                    detail="Ejecución local"
-                    accent="text-fuchsia-200"
-                  />
+            </VisualPanel>
+
+            {/* FASE 4 - Tarjeta Técnica */}
+            <VisualPanel title="Ficha Técnica" icon={Info}>
+              <div className="grid grid-cols-2 gap-y-4 text-xs">
+                <div>
+                  <p className="text-slate-500">Tipo</p>
+                  <p className="font-semibold text-slate-200">{ALGO_TECH_INFO[algorithm].type}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Longitud Clave</p>
+                  <p className="font-semibold text-slate-200">{ALGO_TECH_INFO[algorithm].keyLength}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Bloque</p>
+                  <p className="font-semibold text-slate-200">{ALGO_TECH_INFO[algorithm].blockSize}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Seguridad</p>
+                  <p className="font-semibold text-cyan-400">{ALGO_TECH_INFO[algorithm].securityLevel}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-slate-500">Complejidad Teórica</p>
+                  <p className="font-mono text-slate-300">{ALGO_TECH_INFO[algorithm].complexity}</p>
+                </div>
+              </div>
+            </VisualPanel>
+          </aside>
+
+          <main className="space-y-6">
+            {result ? (
+              <>
+                {/* FASE 4 - KPIs de Cifrado */}
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <MetricCard label="Tiempo" value={`${result.durationMs.toFixed(2)} ms`} icon={Clock} color="cyan" />
+                  <MetricCard label="Throughput" value={formatBytes(result.inputBytes / (result.durationMs / 1000 || 0.001)) + "/s"} icon={Activity} color="blue" />
+                  <MetricCard label="Salida" value={`${result.outputBytes} B`} icon={FileText} color="purple" />
+                  <MetricCard label="Expansión" value={`${(result.expansion / Math.max(1, result.inputBytes) * 100).toFixed(1)}%`} icon={Zap} color="amber" />
                 </div>
 
-                {/* ── Algorithm + complexity ── */}
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                    <p className="mb-1 text-xs text-slate-500">Algoritmo</p>
-                    <p className="font-mono text-sm font-semibold text-cyan-200">{result.algorithmLabel}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                    <p className="mb-1 text-xs text-slate-500">Longitud de clave</p>
-                    <p className="font-mono text-sm font-semibold text-emerald-200">
-                      {algorithm === "rsa" ? "2048 bits" : algorithm === "md5" ? "128 bits" : "256 bits"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                    <p className="mb-1 text-xs text-slate-500">Complejidad teórica</p>
-                    <p className="font-mono text-sm font-semibold text-fuchsia-200">{result.theoreticalComplexity}</p>
-                  </div>
-                </div>
-
-                {/* ── Ciphertext output ── */}
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="font-medium text-white">
-                      {result.reversible ? "Paquete cifrado" : "Resumen criptográfico"}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={copyOutput}
-                      className="rounded-lg border border-white/10 px-3 py-1 text-xs text-cyan-200 hover:bg-white/5"
-                    >
-                      {copied ? "Copiado ✓" : "Copiar"}
-                    </button>
-                  </div>
-                  <p className="max-h-40 overflow-auto break-all font-mono text-xs leading-6 text-slate-300">
-                    {result.output}
-                  </p>
-                </div>
-
-                {/* ── Details ── */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                    <p className="mb-3 text-sm font-medium text-white">Parámetros del algoritmo</p>
-                    <ul className="grid gap-2 text-xs text-slate-400">
-                      {result.details.map((d) => (
-                        <li key={d}>✓ {d}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                    <p className="mb-3 text-sm font-medium text-white">Seguridad Teórica</p>
-                    <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Complejidad estimada:</p>
-                      <p className="font-mono text-lg font-semibold text-cyan-200">
-                        {result.theoreticalComplexity}
-                      </p>
-                      <p className="text-[10px] italic text-slate-500">
-                        Resistencia contra ataques de fuerza bruta genéricos.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── Decrypt ── */}
-                {result.reversible ? (
-                  <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4">
-                    <p className="font-medium text-amber-100">Descifrado manual</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">
-                      Solo se recupera el texto si se conoce la clave correcta.
-                    </p>
-                    {algorithm === "aes" ? (
-                      <>
-                        <input
-                          type="password"
-                          value={decryptPassword}
-                          onChange={(e) => setDecryptPassword(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") void executeDecrypt(); }}
-                          placeholder="Contraseña para descifrar"
-                          className="mt-3 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white outline-none focus:border-amber-400/60"
-                        />
-                        <button
-                          type="button"
-                          onClick={executeDecrypt}
-                          disabled={loading || !decryptPassword}
-                          className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm font-medium text-amber-100 disabled:opacity-40"
-                        >
-                          Intentar descifrar
-                        </button>
-                      </>
-                    ) : algorithm === "rsa" ? (
+                <VisualPanel title="Resultado de la Operación" icon={CheckCircle2}>
+                  <div className="space-y-4">
+                    <div className="relative group">
+                      <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap break-all rounded-xl border border-white/5 bg-slate-950/50 p-4 font-mono text-xs text-cyan-200">
+                        {result.output}
+                      </pre>
                       <button
-                        type="button"
-                        onClick={executeDecrypt}
-                        disabled={loading || !rsaPrivateKey}
-                        className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm font-medium text-amber-100 disabled:opacity-40"
+                        onClick={() => { navigator.clipboard.writeText(result.output); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                        className="absolute right-4 top-4 rounded-lg bg-slate-900/80 px-3 py-1.5 text-[10px] font-bold text-cyan-400 backdrop-blur transition hover:bg-cyan-400 hover:text-slate-950"
                       >
-                        Descifrar con clave privada
+                        {copied ? "COPIADO" : "COPIAR"}
                       </button>
-                    ) : null}
-                    {decryptError && (
-                      <p role="alert" className="mt-3 text-sm text-rose-300">{decryptError}</p>
-                    )}
-                    {decryptedText !== null && (
-                      <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3">
-                        <p className="text-xs font-medium text-emerald-200">
-                          Autenticación correcta · contenido recuperado
-                        </p>
-                        <p className="mt-2 whitespace-pre-wrap break-words text-sm text-white">
-                          {decryptedText}
-                        </p>
+                    </div>
+
+                    <div className="rounded-xl border border-white/5 bg-slate-900/30 p-4">
+                      <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">Detalles del proceso</h4>
+                      <ul className="space-y-2">
+                        {result.details.map((d, i) => (
+                          <li key={i} className="flex items-center gap-2 text-xs text-slate-300">
+                            <div className="h-1 w-1 rounded-full bg-cyan-500" />
+                            {d}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {result.reversible && (
+                      <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-6">
+                        <h4 className="mb-4 text-sm font-bold text-white">Prueba de descifrado (Reversibilidad)</h4>
+                        <div className="flex gap-3">
+                          {algorithm === "aes" && (
+                            <input
+                              type="password"
+                              placeholder="Introduce la clave para revertir..."
+                              className="flex-1 rounded-xl border border-white/10 bg-slate-900 px-4 py-2 text-sm text-white"
+                              value={decryptPassword}
+                              onChange={(e) => setDecryptPassword(e.target.value)}
+                            />
+                          )}
+                          <button
+                            onClick={executeDecrypt}
+                            disabled={loading}
+                            className="rounded-xl bg-slate-800 px-6 py-2 text-sm font-bold text-white hover:bg-slate-700"
+                          >
+                            DESCIFRAR
+                          </button>
+                        </div>
+                        {decryptedText && (
+                          <div className="mt-4 rounded-lg bg-emerald-500/10 p-4 text-xs text-emerald-400">
+                            <p className="mb-1 font-bold">RECUPERADO:</p>
+                            <p className="font-mono">{decryptedText}</p>
+                          </div>
+                        )}
+                        {decryptError && <p className="mt-3 text-xs text-rose-400">{decryptError}</p>}
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="rounded-2xl border border-fuchsia-400/20 bg-fuchsia-400/5 p-4 text-sm leading-6 text-slate-400">
-                    <strong className="text-fuchsia-200">No hay descifrado.</strong> Un hash no
-                    contiene una copia reversible del mensaje; solo puede compararse con otros valores.
-                  </div>
-                )}
+                </VisualPanel>
+              </>
+            ) : (
+              <div className="flex h-full min-h-[400px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/5 bg-slate-950/20 text-center p-10">
+                <div className="mb-4 rounded-full bg-slate-900 p-6">
+                  <Lock className="h-10 w-10 text-slate-700" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-300">Esperando ejecución</h3>
+                <p className="mx-auto mt-2 max-w-xs text-sm text-slate-500">Configura los parámetros a la izquierda y presiona "Procesar" para ver los resultados y métricas.</p>
               </div>
             )}
-          </VisualPanel>
+          </main>
         </div>
       )}
 
@@ -917,357 +1022,273 @@ export default function SimulacionPage() {
           ATTACK TAB
       ══════════════════════════════════════════════════════════════════════ */}
       {mode === "attack" && (
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          {/* ── Left: config ── */}
-          <VisualPanel title="Escenario de fuerza bruta" subtitle="Simulación de ataque con métricas reales">
-            <div className="space-y-5">
-              <label className="block text-sm text-slate-300">
-                <span className="mb-2 block">Algoritmo objetivo</span>
-                <select
-                  value={algorithm}
-                  onChange={(e) => changeAlgorithm(e.target.value as Algorithm)}
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
-                >
-                  {algorithms.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block text-sm text-slate-300">
-                <span className="mb-2 block">Valor objetivo</span>
-                <textarea
-                  value={attackValue}
-                  onChange={(e) => { setAttackValue(e.target.value); resetAttack(); }}
-                  rows={5}
-                  maxLength={500}
-                  placeholder="Ejemplo: Clave-Segura-2026!"
-                  className="w-full resize-y rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
-                />
-              </label>
-
-              {(algorithm === "md5" || algorithm === "sha256") && (
-                <label className="block text-sm text-slate-300">
-                  <span className="mb-2 block">Estrategia de ataque</span>
+        <div className="grid gap-6">
+          <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
+            <VisualPanel title="Simulador de Ataque" icon={Shield}>
+              <div className="space-y-5">
+                <label className="block text-sm">
+                  <span className="mb-2 block text-slate-400">Estrategia</span>
                   <select
                     value={attackStrategy}
                     onChange={(e) => setAttackStrategy(e.target.value as AttackStrategy)}
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white outline-none focus:border-cyan-400/60"
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
                   >
-                    {attackStrategies
-                      .filter((s) => s.value !== "trial-division")
-                      .map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
+                    {attackStrategies.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
-                  <span className="mt-2 block text-xs text-slate-500">
-                    {attackStrategies.find((s) => s.value === attackStrategy)?.description}
-                  </span>
                 </label>
-              )}
 
-              {/* ── Custom limits ── */}
-              <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                <span className="mb-2 block text-sm font-medium text-slate-300">Límites de la simulación</span>
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="block text-xs text-slate-400">
-                    <span className="mb-1 block">Máx. intentos</span>
+                <label className="block text-sm">
+                  <span className="mb-2 block text-slate-400">{algorithm === "aes" ? "Texto esperado" : "Texto original"}</span>
+                  <input
+                    type="text"
+                    value={attackValue}
+                    onChange={(e) => setAttackValue(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                    placeholder="Ingresa el valor..."
+                  />
+                  <p className="mt-2 text-[10px] text-slate-500 leading-relaxed">
+                    {attackStrategies.find(s => s.value === attackStrategy)?.description}
+                  </p>
+                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-xs">
+                    <span className="mb-1 block text-slate-500">Intentos máx.</span>
                     <input
                       type="number"
-                      min={100}
                       value={customMaxAttempts}
-                      onChange={(e) => setCustomMaxAttempts(Math.max(100, Number(e.target.value)))}
-                      className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-cyan-400/60"
+                      onChange={(e) => setCustomMaxAttempts(Number(e.target.value))}
+                      className="w-full rounded-lg border border-white/5 bg-slate-950 px-3 py-2 text-white"
                     />
                   </label>
-                  <label className="block text-xs text-slate-400">
-                    <span className="mb-1 block">Máx. tiempo (ms)</span>
+                  <label className="block text-xs">
+                    <span className="mb-1 block text-slate-500">Tiempo máx (ms)</span>
                     <input
                       type="number"
-                      min={1000}
                       value={customMaxDurationMs}
-                      onChange={(e) => setCustomMaxDurationMs(Math.max(1000, Number(e.target.value)))}
-                      className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-cyan-400/60"
+                      onChange={(e) => setCustomMaxDurationMs(Number(e.target.value))}
+                      className="w-full rounded-lg border border-white/5 bg-slate-950 px-3 py-2 text-white"
                     />
                   </label>
                 </div>
-                <p className="text-[10px] text-slate-500">
-                  El ataque se detendrá cuando encuentre la clave, agote los intentos, llegue al
-                  tiempo máximo, o detecte ausencia de progreso por más de 15 s.
-                </p>
-              </div>
 
-              {/* ── Context note ── */}
-              <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm leading-6 text-slate-300">
-                {algorithm === "aes" &&
-                  "AES se cifra con clave secreta y el ataque intenta encontrarla por fuerza bruta. En condiciones normales, no se recupera la clave."}
-                {algorithm === "rsa" &&
-                  "RSA simula factorización del módulo público. Un módulo de 2048 bits no se rompe dentro del presupuesto realista."}
-                {(algorithm === "md5" || algorithm === "sha256") &&
-                  "Los hashes son irreversibles. La recuperación solo es posible si el valor está en el diccionario o en el espacio explorado."}
-              </div>
-
-              {/* ── Start / Stop buttons ── */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={startAttack}
-                  disabled={!attackValue || loading}
-                  className="flex-1 rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-                >
-                  {loading ? "Simulando ataque…" : "Iniciar simulación"}
-                </button>
-                {loading && (
+                {!loading ? (
                   <button
-                    type="button"
-                    onClick={stopAttack}
-                    className="rounded-2xl border border-rose-400/40 bg-rose-400/10 px-4 py-3 font-semibold text-rose-300 transition hover:bg-rose-400/20"
+                    onClick={startAttack}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-orange-600 py-4 font-bold text-white hover:scale-[1.01] active:scale-95 transition-all"
                   >
-                    Detener
+                    <Zap className="h-5 w-5 fill-current" />
+                    INICIAR SIMULACIÓN
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => abortControllerRef.current?.abort()}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800 py-4 font-bold text-white hover:bg-rose-600 transition-all"
+                  >
+                    <StopCircle className="h-5 w-5" />
+                    DETENER ATAQUE
                   </button>
                 )}
+                {attackError && <p className="text-xs text-rose-400">{attackError}</p>}
               </div>
+            </VisualPanel>
 
-              {attackError && (
-                <p role="alert" className="rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-200">
-                  {attackError}
-                </p>
-              )}
-            </div>
-          </VisualPanel>
-
-          {/* ── Right: live metrics + charts ── */}
-          <VisualPanel title="Informe del ataque" subtitle="Métricas y gráficos en tiempo real">
-            <div className="space-y-5">
-              {/* ── Status row ── */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-6">
+              {/* KPIs de Ataque */}
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <MetricCard
-                  label="Estado"
-                  value={
-                    attackResult
-                      ? attackResult.status === "succeeded"
-                        ? "ÉXITO ✓"
-                        : "FALLIDO ✗"
-                      : attackSnapshot
-                      ? "CORRIENDO"
-                      : "LISTO"
-                  }
-                  detail={attackSnapshot?.reason ?? "Esperando ejecución"}
-                  accent={
-                    attackResult?.status === "succeeded"
-                      ? "text-emerald-200"
-                      : attackResult?.status === "failed"
-                      ? "text-rose-200"
-                      : "text-fuchsia-200"
-                  }
-                />
-                <MetricCard
-                  label="Tiempo transcurrido"
-                  value={attackSnapshot ? formatDurationMs(attackSnapshot.elapsedMs) : "—"}
-                  detail="Duración real"
-                  accent="text-amber-200"
-                />
-                <MetricCard
-                  label="Tiempo restante est."
-                  value={
-                    attackSnapshot && attackSnapshot.estimatedRemainingMs >= 0
-                      ? formatDurationMs(attackSnapshot.estimatedRemainingMs)
-                      : "—"
-                  }
-                  detail="Basado en velocidad actual"
-                  accent="text-cyan-200"
-                />
-                <MetricCard
-                  label="Candidato actual"
-                  value={attackSnapshot?.currentCandidate ? snippetOf(attackSnapshot.currentCandidate, 14) : "—"}
-                  detail="Última clave probada"
-                  accent="text-slate-300"
-                />
-              </div>
-
-              {/* ── Progress + speed row ── */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  label="Intentos"
-                  value={attackSnapshot ? attackSnapshot.attempts.toLocaleString("es-EC") : "—"}
-                  detail="Realizados"
-                  accent="text-cyan-200"
+                  label="Progreso"
+                  value={`${(attackSnapshot?.progress || 0).toFixed(2)}%`}
+                  icon={Activity}
+                  color="cyan"
                 />
                 <MetricCard
                   label="Velocidad"
-                  value={attackSnapshot ? `${attackSnapshot.speedPerSecond.toFixed(1)}/s` : "—"}
-                  detail="Intentos por segundo"
-                  accent="text-emerald-200"
+                  value={`${Math.round(attackSnapshot?.speedPerSecond || 0).toLocaleString()} i/s`}
+                  icon={Zap}
+                  color="amber"
                 />
                 <MetricCard
-                  label="Progreso"
-                  value={attackSnapshot ? `${attackSnapshot.progress.toFixed(2)} %` : "—"}
-                  detail="Del espacio explorado"
-                  accent="text-fuchsia-200"
+                  label="Intentos"
+                  value={(attackSnapshot?.attempts || 0).toLocaleString()}
+                  icon={Database}
+                  color="blue"
                 />
                 <MetricCard
-                  label="Espacio"
-                  value={attackSnapshot ? formatSearchSize(attackSnapshot.searchSize) : "—"}
-                  detail="Volumen teórico total"
-                  accent="text-amber-200"
+                  label="Restante"
+                  value={formatDurationMs(attackSnapshot?.estimatedRemainingMs || 0)}
+                  icon={Clock}
+                  color="purple"
                 />
               </div>
 
-              {/* ── Progress bar ── */}
-              {attackSnapshot && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>Progreso del ataque</span>
-                    <span>{attackSnapshot.progress.toFixed(3)} %</span>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-800">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        attackResult?.status === "succeeded"
-                          ? "bg-emerald-400"
-                          : "bg-cyan-400"
-                      }`}
-                      style={{ width: `${Math.min(100, attackSnapshot.progress)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* ── CPU + Memory cards ── */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="mb-2 text-sm font-medium text-white">CPU estimada</p>
-                  <p className="mb-2 text-2xl font-semibold text-white">
-                    {attackSnapshot ? `${attackSnapshot.cpuUtilization.toFixed(1)} %` : "—"}
-                  </p>
-                  {attackSnapshot && (
-                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
-                      <div
-                        className="h-full rounded-full bg-orange-400"
-                        style={{ width: `${attackSnapshot.cpuUtilization}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-4">
-                  <p className="mb-2 text-sm font-medium text-white">Uso de memoria</p>
-                  <p className="mb-2 text-2xl font-semibold text-white">
-                    {attackSnapshot ? `${(attackSnapshot.memoryBytes / 1024 / 1024).toFixed(2)} MiB` : "—"}
-                  </p>
-                  {attackStats && (
-                    <p className="text-xs text-slate-500">Entropía: {attackStats.log2Space} bits</p>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Chart: progress + speed ── */}
-              {chartData.length > 0 && (
-                <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
-                  <p className="text-sm font-medium text-white">Evolución en tiempo real</p>
-
-                  <div className="h-44 w-full">
+              {/* FASE 5 - Gráficos dinámicos */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                <VisualPanel title="Velocidad de Ataque (i/s)" icon={Activity}>
+                  <div className="h-[200px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="step" stroke="#94a3b8" fontSize={11} />
-                        <YAxis yAxisId="left" stroke="#22d3ee" fontSize={11} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#34d399" fontSize={11} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#0f172a",
-                            borderColor: "rgba(255,255,255,0.1)",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                          }}
-                        />
-                        <Legend verticalAlign="top" height={24} wrapperStyle={{ fontSize: "12px" }} />
-                        <Line yAxisId="left" type="monotone" dataKey="progress" stroke="#22d3ee" strokeWidth={2} dot={false} name="Progreso (%)" />
-                        <Line yAxisId="right" type="monotone" dataKey="speed" stroke="#34d399" strokeWidth={2} dot={false} name="Velocidad (/s)" />
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="colorSpeed" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="step" hide />
+                        <YAxis stroke="#475569" fontSize={10} />
+                        <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", fontSize: "12px" }} />
+                        <Area type="monotone" dataKey="speed" stroke="#f59e0b" fillOpacity={1} fill="url(#colorSpeed)" isAnimationActive={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </VisualPanel>
+
+                <VisualPanel title="Carga del Sistema (%)" icon={Cpu}>
+                  <div className="h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        <XAxis dataKey="step" hide />
+                        <YAxis stroke="#475569" fontSize={10} domain={[0, 100]} />
+                        <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", fontSize: "12px" }} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: "10px" }} />
+                        <Line type="monotone" dataKey="cpu" name="CPU" stroke="#22d3ee" strokeWidth={2} dot={false} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="memory" name="RAM (MB)" stroke="#818cf8" strokeWidth={2} dot={false} isAnimationActive={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
+                </VisualPanel>
+              </div>
 
-                  {/* Chart: CPU */}
-                  <div className="h-36 w-full">
+              {/* FASE 5 - Espacio de búsqueda y Intentos acumulados */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                <VisualPanel title="Espacio de Búsqueda" icon={PieChart}>
+                  <div className="h-[180px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="step" stroke="#94a3b8" fontSize={11} />
-                        <YAxis stroke="#f97316" fontSize={11} domain={[0, 100]} />
+                      <PieChart>
+                        <Pie
+                          data={spaceExplorationData}
+                          innerRadius={50}
+                          outerRadius={70}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {spaceExplorationData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
                         <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#0f172a",
-                            borderColor: "rgba(255,255,255,0.1)",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                          }}
+                          formatter={(value: number) => value.toLocaleString()}
+                          contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", fontSize: "10px" }}
                         />
-                        <Area type="monotone" dataKey="cpu" stroke="#fb923c" fill="#fb923c" fillOpacity={0.2} name="CPU (%)" />
-                      </AreaChart>
+                      </PieChart>
                     </ResponsiveContainer>
                   </div>
-
-                  {/* Chart: Memory */}
-                  <div className="h-36 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="step" stroke="#94a3b8" fontSize={11} />
-                        <YAxis stroke="#a78bfa" fontSize={11} unit=" MB" />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "#0f172a",
-                            borderColor: "rgba(255,255,255,0.1)",
-                            borderRadius: "12px",
-                            fontSize: "12px",
-                          }}
-                        />
-                        <Area type="monotone" dataKey="memory" stroke="#a78bfa" fill="#a78bfa" fillOpacity={0.2} name="Memoria (MiB)" />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                  <div className="mt-2 text-center text-[10px] text-slate-500">
+                    {attackSnapshot ? formatSearchSize(attackSnapshot.searchSize) : "Sin datos"} total
                   </div>
-                </div>
-              )}
+                </VisualPanel>
 
-              {/* ── Result banner ── */}
-              {attackResult && (
-                <div
-                  className={`rounded-2xl border p-4 ${
-                    attackResult.found
-                      ? "border-emerald-400/30 bg-emerald-400/10"
-                      : "border-rose-400/30 bg-rose-400/10"
-                  }`}
-                >
-                  <p className={`font-semibold ${attackResult.found ? "text-emerald-200" : "text-rose-200"}`}>
-                    {attackResult.found ? "✓ Valor recuperado" : "✗ Ataque finalizado sin éxito"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">{attackResult.reason}</p>
-                  {attackResult.foundCandidate && (
-                    <p className="mt-2 break-all font-mono text-sm text-white">
-                      {attackResult.foundCandidate}
-                    </p>
-                  )}
-                  <div className="mt-3 grid grid-cols-3 gap-3 text-xs text-slate-400">
-                    <div>
-                      <span className="text-slate-500">Intentos</span>
-                      <br />
-                      {attackResult.attempts.toLocaleString("es-EC")}
+                <div className="lg:col-span-2">
+                  <VisualPanel title="Intentos Acumulados" icon={BarChart}>
+                    <div className="h-[180px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                          <XAxis dataKey="step" hide />
+                          <YAxis stroke="#475569" fontSize={10} />
+                          <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", fontSize: "12px" }} />
+                          <Area type="step" dataKey="attempts" stroke="#818cf8" fill="#818cf8" fillOpacity={0.1} isAnimationActive={false} />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
-                    <div>
-                      <span className="text-slate-500">Duración</span>
-                      <br />
-                      {formatDurationMs(attackResult.elapsedMs)}
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Velocidad</span>
-                      <br />
-                      {attackResult.speedPerSecond.toFixed(1)}/s
-                    </div>
-                  </div>
+                  </VisualPanel>
                 </div>
-              )}
+              </div>
             </div>
-          </VisualPanel>
+          </div>
+
+          {/* FASE 7 - Resumen Final (Panel que aparece al terminar) */}
+          {showSummary && attackResult && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <VisualPanel
+                title="Resumen Final del Experimento"
+                icon={CheckCircle2}
+                className="border-2 border-cyan-400/30 bg-cyan-400/5 shadow-2xl shadow-cyan-900/20"
+              >
+                <div className="grid gap-8 md:grid-cols-3">
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Resultado</h5>
+                      <div className="mt-1 flex items-center gap-2">
+                        {attackResult.found ? (
+                          <>
+                            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                            <span className="text-xl font-bold text-emerald-400">EXITOSO</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-5 w-5 text-rose-400" />
+                            <span className="text-xl font-bold text-rose-400">FALLIDO</span>
+                          </>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">{attackResult.reason}</p>
+                    </div>
+                    {attackResult.found && (
+                      <div className="rounded-xl bg-emerald-400/10 p-4">
+                        <p className="text-[10px] font-bold text-emerald-500 uppercase">Clave recuperada</p>
+                        <p className="mt-1 font-mono text-lg text-emerald-200 break-all">{attackResult.foundCandidate}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-white/5 bg-slate-900/40 p-3">
+                      <p className="text-[10px] text-slate-500 uppercase">Tiempo Total</p>
+                      <p className="text-sm font-bold text-slate-200">{formatDurationMs(attackResult.elapsedMs)}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/5 bg-slate-900/40 p-3">
+                      <p className="text-[10px] text-slate-500 uppercase">Intentos</p>
+                      <p className="text-sm font-bold text-slate-200">{attackResult.attempts.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/5 bg-slate-900/40 p-3">
+                      <p className="text-[10px] text-slate-500 uppercase">Velocidad Prom.</p>
+                      <p className="text-sm font-bold text-slate-200">{Math.round(attackResult.speedPerSecond).toLocaleString()} i/s</p>
+                    </div>
+                    <div className="rounded-xl border border-white/5 bg-slate-900/40 p-3">
+                      <p className="text-[10px] text-slate-500 uppercase">Espacio Recorrido</p>
+                      <p className="text-sm font-bold text-slate-200">{attackResult.progress.toFixed(4)}%</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-white/5 bg-slate-900/40 p-3">
+                      <p className="text-[10px] text-slate-500 uppercase">Pico CPU</p>
+                      <p className="text-sm font-bold text-cyan-400">{attackResult.peakCpuUtilization.toFixed(1)}%</p>
+                    </div>
+                    <div className="rounded-xl border border-white/5 bg-slate-900/40 p-3">
+                      <p className="text-[10px] text-slate-500 uppercase">Pico Memoria</p>
+                      <p className="text-sm font-bold text-blue-400">{formatBytes(attackResult.peakMemoryBytes)}</p>
+                    </div>
+                    <div className="col-span-2 rounded-xl border border-white/5 bg-slate-900/40 p-3 flex justify-between items-center">
+                      <span className="text-[10px] text-slate-500 uppercase">Estado Final</span>
+                      {renderStatusBadge(attackResult.attackStatus, attackResult.found)}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowSummary(false)}
+                    className="rounded-xl bg-slate-800 px-6 py-2 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white"
+                  >
+                    DESCARTAR RESUMEN
+                  </button>
+                </div>
+              </VisualPanel>
+            </div>
+          )}
         </div>
       )}
 
@@ -1276,224 +1297,177 @@ export default function SimulacionPage() {
       ══════════════════════════════════════════════════════════════════════ */}
       {mode === "history" && (
         <div className="space-y-6">
-          <VisualPanel
-            title="Historial de simulaciones"
-            subtitle={`${filteredHistory.length} / ${history.length} registros`}
-          >
-            <div className="space-y-4">
-              {/* ── Filters row ── */}
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="Buscar por texto, algoritmo o ID…"
-                  value={historySearch}
-                  onChange={(e) => setHistorySearch(e.target.value)}
-                  className="min-w-[220px] flex-1 rounded-xl border border-white/10 bg-slate-950 px-4 py-2 text-sm text-white outline-none focus:border-cyan-400/60"
-                />
-                <select
-                  value={historyAlgoFilter}
-                  onChange={(e) => setHistoryAlgoFilter(e.target.value as Algorithm | "all")}
-                  className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/60"
-                >
-                  <option value="all">Todos los algoritmos</option>
-                  <option value="aes">AES</option>
-                  <option value="rsa">RSA</option>
-                  <option value="md5">MD5</option>
-                  <option value="sha256">SHA-256</option>
-                </select>
-                <select
-                  value={historyOpFilter}
-                  onChange={(e) => setHistoryOpFilter(e.target.value as typeof historyOpFilter)}
-                  className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/60"
-                >
-                  <option value="all">Todas las operaciones</option>
-                  <option value="encryption">Cifrado</option>
-                  <option value="decryption">Descifrado</option>
-                  <option value="attack">Ataque</option>
-                </select>
-                <select
-                  value={historyStatusFilter}
-                  onChange={(e) => setHistoryStatusFilter(e.target.value as typeof historyStatusFilter)}
-                  className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/60"
-                >
-                  <option value="all">Todos los estados</option>
-                  <option value="success">Éxito</option>
-                  <option value="failed">Fallo</option>
-                </select>
-              </div>
-
-              {/* ── Action buttons ── */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="flex-1 text-xs text-slate-500">
-                  {filteredHistory.length} resultado{filteredHistory.length !== 1 ? "s" : ""}
-                </span>
+          <VisualPanel title="Historial de Simulaciones" icon={FileText}>
+            {/* Filters */}
+            <div className="mb-6 grid gap-4 md:grid-cols-4 lg:grid-cols-5">
+              <input
+                type="text"
+                placeholder="Buscar por ID o texto..."
+                className="rounded-xl border border-white/10 bg-slate-900 px-4 py-2 text-sm text-white"
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+              />
+              <select
+                value={historyAlgoFilter}
+                onChange={(e) => setHistoryAlgoFilter(e.target.value as any)}
+                className="rounded-xl border border-white/10 bg-slate-900 px-4 py-2 text-sm text-white"
+              >
+                <option value="all">Todos los algoritmos</option>
+                {algorithms.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+              </select>
+              <select
+                value={historyOpFilter}
+                onChange={(e) => setHistoryOpFilter(e.target.value as any)}
+                className="rounded-xl border border-white/10 bg-slate-900 px-4 py-2 text-sm text-white"
+              >
+                <option value="all">Todas las operaciones</option>
+                <option value="encryption">Encriptación</option>
+                <option value="decryption">Desencriptación</option>
+                <option value="attack">Ataques</option>
+              </select>
+              <select
+                value={historyStatusFilter}
+                onChange={(e) => setHistoryStatusFilter(e.target.value as any)}
+                className="rounded-xl border border-white/10 bg-slate-900 px-4 py-2 text-sm text-white"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="success">Éxitos</option>
+                <option value="failed">Fallos</option>
+              </select>
+              <div className="flex gap-2">
                 <button
                   onClick={() => SimulationStorage.exportToCSV(filteredHistory)}
-                  disabled={filteredHistory.length === 0}
-                  className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20 disabled:opacity-40"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-sm font-bold text-white hover:bg-slate-700"
                 >
-                  ↓ Exportar CSV
+                  <Download className="h-4 w-4" /> CSV
                 </button>
                 <button
-                  onClick={() => {
-                    if (filteredHistory.length === 0) return;
-                    if (window.confirm(`¿Eliminar los ${filteredHistory.length} registros filtrados?`)) {
-                      filteredHistory.forEach((r) => SimulationStorage.delete(r.id));
-                      refreshHistory();
-                    }
-                  }}
-                  disabled={filteredHistory.length === 0}
-                  className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/20 disabled:opacity-40"
+                  onClick={() => { if(confirm("¿Limpiar todo el historial?")) { SimulationStorage.clear(); refreshHistory(); } }}
+                  className="flex items-center justify-center rounded-xl bg-rose-500/10 px-4 py-2 text-rose-500 hover:bg-rose-500 hover:text-white"
                 >
-                  Eliminar selección
+                  <Trash2 className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={() => {
-                    if (window.confirm("¿Limpiar todo el historial?")) {
-                      SimulationStorage.clear();
-                      refreshHistory();
-                    }
-                  }}
-                  disabled={history.length === 0}
-                  className="rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-2 text-sm font-medium text-rose-200 transition hover:bg-rose-400/20 disabled:opacity-40"
-                >
-                  Limpiar todo
-                </button>
-              </div>
-
-              {/* ── Table ── */}
-              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/50">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-white/10 bg-white/5 text-slate-400">
-                    <tr>
-                      {(
-                        [
-                          ["timestamp", "Fecha"],
-                          ["algorithm", "Algoritmo"],
-                          ["operation", "Operación"],
-                          ["status", "Resultado"],
-                          ["executionTimeMs", "Tiempo"],
-                          ["attempts", "Intentos"],
-                          ["attemptsPerSecond", "Velocidad"],
-                          ["progress", "Progreso"],
-                        ] as [SortField, string][]
-                      ).map(([field, label]) => (
-                        <th
-                          key={field}
-                          className="cursor-pointer select-none whitespace-nowrap px-4 py-3 font-medium hover:text-white"
-                          onClick={() => toggleSort(field)}
-                        >
-                          {label}
-                          <span className="text-[10px] text-slate-600">{sortIndicator(field)}</span>
-                        </th>
-                      ))}
-                      <th className="px-4 py-3 font-medium text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {filteredHistory.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="px-4 py-10 text-center text-slate-500">
-                          No se encontraron registros. Ejecuta una simulación para comenzar.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredHistory.map((record) => (
-                        <tr key={record.id} className="group transition-colors hover:bg-white/5">
-                          <td className="whitespace-nowrap px-4 py-3 text-slate-300">
-                            <div className="font-mono text-[10px] text-slate-600">{record.id}</div>
-                            <div className="text-xs">
-                              {new Date(record.timestamp).toLocaleString("es-EC", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                second: "2-digit",
-                              })}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="rounded-lg bg-slate-800 px-2 py-1 font-mono text-xs uppercase text-cyan-300">
-                              {record.algorithmKey}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 capitalize text-slate-300">
-                            {record.operation === "attack"
-                              ? "Ataque"
-                              : record.operation === "encryption"
-                              ? "Cifrado"
-                              : "Descifrado"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium ${
-                                record.status === "success"
-                                  ? "bg-emerald-400/10 text-emerald-400"
-                                  : "bg-rose-400/10 text-rose-400"
-                              }`}
-                            >
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  record.status === "success" ? "bg-emerald-400" : "bg-rose-400"
-                                }`}
-                              />
-                              {record.status === "success" ? "Éxito" : "Fallo"}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-slate-300">
-                            {record.operation === "attack"
-                              ? formatDurationMs(record.attackDurationMs)
-                              : formatDurationMs(record.executionTimeMs)}
-                          </td>
-                          <td className="px-4 py-3 text-slate-300">
-                            {record.attempts > 1
-                              ? record.attempts.toLocaleString("es-EC")
-                              : "—"}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-slate-300">
-                            {record.attemptsPerSecond > 0
-                              ? `${record.attemptsPerSecond.toFixed(1)}/s`
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-slate-300">
-                            {record.operation === "attack"
-                              ? `${record.progress.toFixed(2)} %`
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {deleteConfirmId === record.id ? (
-                              <span className="inline-flex gap-2">
-                                <button
-                                  onClick={() => deleteRecord(record.id)}
-                                  className="text-xs text-rose-400 hover:text-rose-300"
-                                >
-                                  Confirmar
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirmId(null)}
-                                  className="text-xs text-slate-400 hover:text-slate-300"
-                                >
-                                  Cancelar
-                                </button>
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => setDeleteConfirmId(record.id)}
-                                className="text-rose-400 opacity-0 transition-opacity hover:text-rose-300 group-hover:opacity-100"
-                              >
-                                Eliminar
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
               </div>
             </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto rounded-xl border border-white/5">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-900/80 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <tr>
+                    <th className="cursor-pointer p-4 hover:text-white" onClick={() => toggleSort("timestamp")}>Fecha/Hora</th>
+                    <th className="cursor-pointer p-4 hover:text-white" onClick={() => toggleSort("algorithm")}>Algoritmo</th>
+                    <th className="cursor-pointer p-4 hover:text-white" onClick={() => toggleSort("operation")}>Operación</th>
+                    <th className="p-4">Estado</th>
+                    <th className="cursor-pointer p-4 hover:text-white" onClick={() => toggleSort("executionTimeMs")}>Tiempo</th>
+                    <th className="cursor-pointer p-4 hover:text-white" onClick={() => toggleSort("attempts")}>Intentos</th>
+                    <th className="p-4">CPU/Mem</th>
+                    <th className="p-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {pagedHistory.map((r) => (
+                    <tr key={r.id} className="group hover:bg-white/[0.02]">
+                      <td className="p-4">
+                        <p className="font-semibold text-slate-200">{r.fecha}</p>
+                        <p className="text-[10px] text-slate-500">{r.hora}</p>
+                      </td>
+                      <td className="p-4">
+                        <span className="font-bold text-cyan-400">{r.algorithm}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[9px] font-bold uppercase">
+                          {r.operation === "encryption" ? "🔒 Cifrado" : r.operation === "decryption" ? "🔓 Descifrado" : "⚔️ Ataque"}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        {r.operation === "attack"
+                          ? renderStatusBadge(r.attackStatus, r.attackSuccess)
+                          : renderStatusBadge("", r.status === "success")}
+                      </td>
+                      <td className="p-4">{formatDurationMs(r.executionTimeMs)}</td>
+                      <td className="p-4">{r.attempts.toLocaleString()}</td>
+                      <td className="p-4">
+                        <p className="text-[10px] text-slate-400">Peak: {r.peakCpuUsage.toFixed(1)}%</p>
+                        <p className="text-[10px] text-slate-400">{formatBytes(r.peakMemoryUsageMb * 1024 * 1024)}</p>
+                      </td>
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={() => setDeleteConfirmId(r.id)}
+                          className="rounded-lg p-2 text-slate-600 hover:bg-rose-500/10 hover:text-rose-400"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {pagedHistory.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="p-10 text-center text-slate-500">No hay registros que coincidan con los filtros.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between">
+                <p className="text-xs text-slate-500">Mostrando {pagedHistory.length} de {filteredHistory.length} experimentos</p>
+                <div className="flex gap-1">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => p - 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:bg-slate-800 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`h-8 w-8 rounded-lg text-xs font-bold transition ${
+                        currentPage === i + 1 ? "bg-cyan-400 text-slate-950" : "border border-white/10 text-slate-400 hover:bg-slate-800"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  )).slice(Math.max(0, currentPage - 3), Math.min(totalPages, currentPage + 2))}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:bg-slate-800 disabled:opacity-30"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </VisualPanel>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">¿Eliminar registro?</h3>
+            <p className="mt-2 text-sm text-slate-400">Esta acción no se puede deshacer. Se eliminará el experimento de la base de datos local.</p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 rounded-xl bg-slate-800 py-3 text-sm font-bold text-white hover:bg-slate-700"
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={() => deleteRecord(deleteConfirmId)}
+                className="flex-1 rounded-xl bg-rose-600 py-3 text-sm font-bold text-white hover:bg-rose-500"
+              >
+                ELIMINAR
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </DashboardShell>

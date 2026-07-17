@@ -44,11 +44,27 @@ export interface AttackSnapshot {
   status: "running" | "succeeded" | "failed";
   reason: string;
   currentCandidate?: string;
+  /** Peak CPU utilization observed during this attack session. */
+  peakCpuUtilization: number;
+  /** Peak memory usage (bytes) observed during this attack session. */
+  peakMemoryBytes: number;
 }
+
+export type AttackStatus =
+  | "SUCCESS"
+  | "FAILED"
+  | "TIME_LIMIT"
+  | "MAX_ATTEMPTS"
+  | "USER_CANCELLED"
+  | "STALL";
 
 export interface AttackResult extends AttackSnapshot {
   found: boolean;
   foundCandidate?: string;
+  /** Specific termination status. */
+  attackStatus: AttackStatus;
+  /** The attempt number where the key was found (0 if not found). */
+  foundIteration?: number;
 }
 
 // ─── Common word list for dictionary attacks ──────────────────────────────────
@@ -155,6 +171,16 @@ function reasonLabel(r: StopReason): string {
   }
 }
 
+function mapStopReasonToStatus(r: StopReason): AttackStatus {
+  switch (r) {
+    case "maxAttempts": return "MAX_ATTEMPTS";
+    case "maxDuration": return "TIME_LIMIT";
+    case "aborted": return "USER_CANCELLED";
+    case "stall": return "STALL";
+    default: return "FAILED";
+  }
+}
+
 // ─── Brute-force generator ────────────────────────────────────────────────────
 
 function* bruteForceGenerator(charset: string[], maxLength: number): Generator<string> {
@@ -196,6 +222,8 @@ async function runDictionaryAttack(
   let busyMs = 0;
   let attempts = 0;
   let lastProgressMs = performance.now();
+  let peakCpu = 0;
+  let peakMem = 0;
 
   for (const candidate of dictionary) {
     const stepStart = performance.now();
@@ -207,18 +235,25 @@ async function runDictionaryAttack(
     const elapsedMs = performance.now() - started;
     const speed = attempts / Math.max(1, elapsedMs / 1000);
     const progress = formatProgress(attempts, total);
+    const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+    const mem = sampleMemoryUsage();
+    peakCpu = Math.max(peakCpu, cpu);
+    peakMem = Math.max(peakMem, mem);
+
     const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
       speedPerSecond: speed,
       progress,
       searchSize: total,
-      memoryBytes: sampleMemoryUsage(),
-      cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      memoryBytes: mem,
+      cpuUtilization: cpu,
       estimatedRemainingMs: estimateRemaining(attempts, total, speed),
       status: "running",
       reason: "Explorando diccionario de contraseñas.",
       currentCandidate: candidate,
+      peakCpuUtilization: peakCpu,
+      peakMemoryBytes: peakMem,
     };
     onUpdate(snap);
 
@@ -232,12 +267,21 @@ async function runDictionaryAttack(
         estimatedRemainingMs: 0,
         found: true,
         foundCandidate: candidate,
+        attackStatus: "SUCCESS",
+        foundIteration: attempts,
       };
     }
 
     const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
     if (stop.stopped) {
-      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
+      return {
+        ...snap,
+        status: "failed",
+        reason: reasonLabel(stop.reason),
+        found: false,
+        attackStatus: mapStopReasonToStatus(stop.reason),
+        foundIteration: 0,
+      };
     }
 
     await breathe(attempts, 10);
@@ -245,18 +289,24 @@ async function runDictionaryAttack(
 
   const elapsedMs = performance.now() - started;
   const speed = attempts / Math.max(1, elapsedMs / 1000);
+  const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+  const mem = sampleMemoryUsage();
   return {
     elapsedMs,
     attempts,
     speedPerSecond: speed,
     progress: formatProgress(attempts, total),
     searchSize: total,
-    memoryBytes: sampleMemoryUsage(),
-    cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    memoryBytes: mem,
+    cpuUtilization: cpu,
     estimatedRemainingMs: 0,
     status: "failed",
     reason: reasonLabel("exhausted"),
     found: false,
+    peakCpuUtilization: Math.max(peakCpu, cpu),
+    peakMemoryBytes: Math.max(peakMem, mem),
+    attackStatus: "FAILED",
+    foundIteration: 0,
   };
 }
 
@@ -279,6 +329,8 @@ async function runBruteForceHashAttack(
   let busyMs = 0;
   let attempts = 0;
   let lastProgressMs = performance.now();
+  let peakCpu = 0;
+  let peakMem = 0;
 
   for (const candidate of bruteForceGenerator(charset, maxLength)) {
     const stepStart = performance.now();
@@ -290,18 +342,25 @@ async function runBruteForceHashAttack(
     const elapsedMs = performance.now() - started;
     const speed = attempts / Math.max(1, elapsedMs / 1000);
     const progress = formatProgress(attempts, totalCandidates);
+    const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+    const mem = sampleMemoryUsage();
+    peakCpu = Math.max(peakCpu, cpu);
+    peakMem = Math.max(peakMem, mem);
+
     const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
       speedPerSecond: speed,
       progress,
       searchSize: totalCandidates,
-      memoryBytes: sampleMemoryUsage(),
-      cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      memoryBytes: mem,
+      cpuUtilization: cpu,
       estimatedRemainingMs: estimateRemaining(attempts, totalCandidates, speed),
       status: "running",
       reason: "Explorando el espacio de búsqueda por fuerza bruta.",
       currentCandidate: candidate,
+      peakCpuUtilization: peakCpu,
+      peakMemoryBytes: peakMem,
     };
     onUpdate(snap);
 
@@ -315,12 +374,21 @@ async function runBruteForceHashAttack(
         estimatedRemainingMs: 0,
         found: true,
         foundCandidate: candidate,
+        attackStatus: "SUCCESS",
+        foundIteration: attempts,
       };
     }
 
     const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
     if (stop.stopped) {
-      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
+      return {
+        ...snap,
+        status: "failed",
+        reason: reasonLabel(stop.reason),
+        found: false,
+        attackStatus: mapStopReasonToStatus(stop.reason),
+        foundIteration: 0,
+      };
     }
 
     await breathe(attempts, 20);
@@ -328,18 +396,24 @@ async function runBruteForceHashAttack(
 
   const elapsedMs = performance.now() - started;
   const speed = attempts / Math.max(1, elapsedMs / 1000);
+  const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+  const mem = sampleMemoryUsage();
   return {
     elapsedMs,
     attempts,
     speedPerSecond: speed,
     progress: formatProgress(attempts, totalCandidates),
     searchSize: totalCandidates,
-    memoryBytes: sampleMemoryUsage(),
-    cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    memoryBytes: mem,
+    cpuUtilization: cpu,
     estimatedRemainingMs: 0,
     status: "failed",
     reason: reasonLabel("exhausted"),
     found: false,
+    peakCpuUtilization: Math.max(peakCpu, cpu),
+    peakMemoryBytes: Math.max(peakMem, mem),
+    attackStatus: "FAILED",
+    foundIteration: 0,
   };
 }
 
@@ -388,6 +462,8 @@ export async function attackRsa(
   let busyMs = 0;
   let attempts = 0;
   let lastProgressMs = performance.now();
+  let peakCpu = 0;
+  let peakMem = 0;
 
   for await (const divisor of trialDivisorGenerator(options.maxAttempts)) {
     const stepStart = performance.now();
@@ -399,18 +475,25 @@ export async function attackRsa(
     const elapsedMs = performance.now() - started;
     const speed = attempts / Math.max(1, elapsedMs / 1000);
     const progress = formatProgress(attempts, total);
+    const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+    const mem = sampleMemoryUsage();
+    peakCpu = Math.max(peakCpu, cpu);
+    peakMem = Math.max(peakMem, mem);
+
     const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
       speedPerSecond: speed,
       progress,
       searchSize: total,
-      memoryBytes: sampleMemoryUsage(),
-      cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      memoryBytes: mem,
+      cpuUtilization: cpu,
       estimatedRemainingMs: estimateRemaining(attempts, total, speed),
       status: "running",
       reason: "Intentando factorizar el módulo RSA por división de prueba.",
       currentCandidate: divisor.toString(),
+      peakCpuUtilization: peakCpu,
+      peakMemoryBytes: peakMem,
     };
     onUpdate(snap);
 
@@ -426,12 +509,21 @@ export async function attackRsa(
         estimatedRemainingMs: 0,
         found: true,
         foundCandidate: `${factor.toString()} × ${complement.toString()}`,
+        attackStatus: "SUCCESS",
+        foundIteration: attempts,
       };
     }
 
     const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
     if (stop.stopped) {
-      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
+      return {
+        ...snap,
+        status: "failed",
+        reason: reasonLabel(stop.reason),
+        found: false,
+        attackStatus: mapStopReasonToStatus(stop.reason),
+        foundIteration: 0,
+      };
     }
 
     // RSA BigInt arithmetic is slow; yield every 10 iterations
@@ -440,18 +532,24 @@ export async function attackRsa(
 
   const elapsedMs = performance.now() - started;
   const speed = attempts / Math.max(1, elapsedMs / 1000);
+  const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+  const mem = sampleMemoryUsage();
   return {
     elapsedMs,
     attempts,
     speedPerSecond: speed,
     progress: formatProgress(attempts, total),
     searchSize: total,
-    memoryBytes: sampleMemoryUsage(),
-    cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    memoryBytes: mem,
+    cpuUtilization: cpu,
     estimatedRemainingMs: 0,
     status: "failed",
     reason: "El ataque de factorización alcanzó el límite de exploración sin recuperar la clave privada.",
     found: false,
+    peakCpuUtilization: Math.max(peakCpu, cpu),
+    peakMemoryBytes: Math.max(peakMem, mem),
+    attackStatus: "FAILED",
+    foundIteration: 0,
   };
 }
 
@@ -474,6 +572,8 @@ export async function attackAes(
   let busyMs = 0;
   let attempts = 0;
   let lastProgressMs = performance.now();
+  let peakCpu = 0;
+  let peakMem = 0;
 
   for (const candidate of bruteForceGenerator(charset, targetLength)) {
     const stepStart = performance.now();
@@ -502,18 +602,25 @@ export async function attackAes(
     const elapsedMs = performance.now() - started;
     const speed = attempts / Math.max(1, elapsedMs / 1000);
     const progress = formatProgress(attempts, totalSpace);
+    const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+    const mem = sampleMemoryUsage();
+    peakCpu = Math.max(peakCpu, cpu);
+    peakMem = Math.max(peakMem, mem);
+
     const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
       speedPerSecond: speed,
       progress,
       searchSize: totalSpace,
-      memoryBytes: sampleMemoryUsage(),
-      cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      memoryBytes: mem,
+      cpuUtilization: cpu,
       estimatedRemainingMs: estimateRemaining(attempts, totalSpace, speed),
       status: "running",
       reason: "Explorando el espacio de contraseñas para AES.",
       currentCandidate: candidate,
+      peakCpuUtilization: peakCpu,
+      peakMemoryBytes: peakMem,
     };
     onUpdate(snap);
 
@@ -529,12 +636,21 @@ export async function attackAes(
         estimatedRemainingMs: 0,
         found: true,
         foundCandidate: candidate,
+        attackStatus: "SUCCESS",
+        foundIteration: attempts,
       };
     }
 
     const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
     if (stop.stopped) {
-      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
+      return {
+        ...snap,
+        status: "failed",
+        reason: reasonLabel(stop.reason),
+        found: false,
+        attackStatus: mapStopReasonToStatus(stop.reason),
+        foundIteration: 0,
+      };
     }
 
     // AES-PBKDF2 is expensive; breathe every 5 iterations
@@ -543,17 +659,23 @@ export async function attackAes(
 
   const elapsedMs = performance.now() - started;
   const speed = attempts / Math.max(1, elapsedMs / 1000);
+  const cpu = calculateCpuUtilization(elapsedMs, busyMs);
+  const mem = sampleMemoryUsage();
   return {
     elapsedMs,
     attempts,
     speedPerSecond: speed,
     progress: formatProgress(attempts, totalSpace),
     searchSize: totalSpace,
-    memoryBytes: sampleMemoryUsage(),
-    cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    memoryBytes: mem,
+    cpuUtilization: cpu,
     estimatedRemainingMs: 0,
     status: "failed",
     reason: "El ataque de fuerza bruta a AES no encontró la clave dentro del presupuesto de cómputo.",
     found: false,
+    peakCpuUtilization: Math.max(peakCpu, cpu),
+    peakMemoryBytes: Math.max(peakMem, mem),
+    attackStatus: "FAILED",
+    foundIteration: 0,
   };
 }
