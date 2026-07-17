@@ -5,12 +5,7 @@ import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -24,7 +19,6 @@ import DashboardShell from "../components/dashboard-shell";
 import MetricCard from "../components/metric-card";
 import VisualPanel from "../components/visual-panel";
 
-// Estructuras de datos seguras para evitar excepciones en compilación
 const probabilitiesData = probabilitiesRawData as Record<string, any>;
 
 type NumericStats = {
@@ -38,7 +32,6 @@ type NumericStats = {
   max: number | null;
 };
 
-// Formateadores estadísticos profesionales
 const formatMetric = (value: number | null, decimals = 2) => {
   if (value === null || !Number.isFinite(value)) return "—";
   return new Intl.NumberFormat("en-US", {
@@ -66,14 +59,26 @@ const formatBytes = (value: number | null) => {
 };
 
 export default function ProbabilidadPage() {
-  // Estados para la Tabla Interactiva (Punto 9)
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<string>("rows");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeSection, setActiveSection] = useState("resumen");
   const itemsPerPage = 5;
 
-  // 1. Extracción y Verificación de Evidencia (Análisis previo y trazabilidad)
+  const sections = [
+    { id: "resumen", label: "Resumen", icon: "📊" },
+    { id: "estadisticos", label: "Indicadores", icon: "📈" },
+    { id: "distribuciones", label: "Distribuciones", icon: "📉" },
+    { id: "correlaciones", label: "Correlaciones", icon: "🔗" },
+    { id: "regresion", label: "Regresión", icon: "📐" },
+    { id: "intervalos", label: "Intervalos", icon: "📏" },
+    { id: "combinatorio", label: "Combinatorio", icon: "🎯" },
+    { id: "comparativas", label: "Comparativas", icon: "⚖️" },
+    { id: "datos", label: "Datos", icon: "🗄️" },
+    { id: "conclusiones", label: "Conclusiones", icon: "💡" },
+  ];
+
   const evidence = useMemo(() => {
     const distributions = probabilitiesData.distributions;
     const confidenceIntervals = probabilitiesData.confidence_intervals;
@@ -83,11 +88,9 @@ export default function ProbabilidadPage() {
     const combinatorial = probabilitiesData.combinatorial_analysis;
     const comparisons = probabilitiesData.comparisons;
 
-    // Archivo primario de análisis
     const primaryFile = distributions?.data?.[0] ?? null;
     const numericStats: Record<string, NumericStats> = primaryFile?.summary?.numeric_stats ?? {};
 
-    // Auxiliares para extraer medias
     const getMean = (key: string) => numericStats[key]?.mean ?? null;
     const getStd = (key: string) => numericStats[key]?.std ?? null;
 
@@ -114,7 +117,6 @@ export default function ProbabilidadPage() {
     };
   }, []);
 
-  // 2. Distribuciones (Punto 3 - Generación de histograma aproximado usando cuartiles)
   const distributionData = useMemo(() => {
     const stats = evidence.numericStats["execution_time_attack"];
     if (!stats) return [];
@@ -127,12 +129,10 @@ export default function ProbabilidadPage() {
     ];
   }, [evidence]);
 
-  // 3. Correlaciones (Punto 4 - Matriz de calor simulada con datos reales de la sección)
   const correlationMatrix = useMemo(() => {
     if (evidence.correlations?.data?.[0]?.matrix) {
       return evidence.correlations.data[0].matrix;
     }
-    // Fallback estricto basado en la estructura de calidad de datos
     return [
       { varA: "Espacio Búsqueda", varB: "Tiempo Ataque", r: 0.89, tipo: "Positiva Fuerte" },
       { varA: "Longitud Clave", varB: "Tiempo de Cifrado", r: 0.72, tipo: "Positiva Fuerte" },
@@ -141,12 +141,10 @@ export default function ProbabilidadPage() {
     ];
   }, [evidence]);
 
-  // 4. Modelos de Regresión (Punto 5 - Datos de dispersión y recta de mejor ajuste)
   const regressionPoints = useMemo(() => {
     if (evidence.regressionModels?.data?.[0]?.points) {
       return evidence.regressionModels.data[0].points;
     }
-    // Simulación matemática basada en las medias reales del JSON para graficar la tendencia
     const points = [];
     const meanX = evidence.log2Mean ?? 16;
     const meanY = evidence.attackTimeMean ?? 4;
@@ -158,12 +156,10 @@ export default function ProbabilidadPage() {
     return points;
   }, [evidence]);
 
-  // 5. Intervalos de Confianza (Punto 6)
   const confidenceIntervalsData = useMemo(() => {
     if (evidence.confidenceIntervals?.data) {
       return evidence.confidenceIntervals.data;
     }
-    // Construcción teórica basada en la desviación estándar real del JSON (95% de confianza)
     const mean = evidence.attackTimeMean ?? 0;
     const std = evidence.attackTimeStd ?? 0;
     const n = evidence.recordsCount ?? 1;
@@ -179,7 +175,6 @@ export default function ProbabilidadPage() {
     ];
   }, [evidence]);
 
-  // 6. Tabla Interactiva: Filtrado, Ordenación y Paginación (Punto 9)
   const rawFilesList = useMemo(() => {
     const list = evidence.distributions?.data ?? [];
     return list.map((item: any, index: number) => ({
@@ -243,7 +238,6 @@ export default function ProbabilidadPage() {
     document.body.removeChild(link);
   };
 
-  // 7. Informe de datos no utilizados (Punto 12)
   const unusedDataReport = useMemo(() => {
     return [
       {
@@ -274,94 +268,117 @@ export default function ProbabilidadPage() {
       description="Evaluación formal de los modelos probabilísticos y descriptivos derivados de las simulaciones criptográficas."
       badge="Análisis Científico"
     >
-      
-      {/* 1. RESUMEN EJECUTIVO (Punto 1) */}
-      <VisualPanel
-        title="Resumen Ejecutivo"
-        subtitle="Evidencia agregada extraída directamente de probabilities.json"
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-            <span className="text-[11px] font-mono text-cyan-400">Ruta: distributions.summary</span>
-            <h4 className="mt-2 text-lg font-semibold text-white">Conjuntos Analizados</h4>
-            <p className="mt-1 text-sm text-slate-400">
-              Se han procesado un total de <span className="font-semibold text-white">{evidence.filesCount}</span> archivos CSV de métricas estocásticas, conteniendo un total de <span className="font-semibold text-white">{formatMetric(evidence.recordsCount, 0)}</span> observaciones criptográficas.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-            <span className="text-[11px] font-mono text-cyan-400">Ruta: distributions.data[0].quality</span>
-            <h4 className="mt-2 text-lg font-semibold text-white">Consistencia y Calidad</h4>
-            <p className="mt-1 text-sm text-slate-400">
-              La fracción de filas vacías identificadas en el dataset es de <span className="font-semibold text-white">{(evidence.quality?.empty_rows_fraction * 100 || 0).toFixed(4)}%</span>, garantizando que el análisis cuenta con alta integridad operativa.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-            <span className="text-[11px] font-mono text-cyan-400">Ruta: confidence_intervals</span>
-            <h4 className="mt-2 text-lg font-semibold text-white">Modelado Probabilístico</h4>
-            <p className="mt-1 text-sm text-slate-400">
-              Los intervalos de confianza estructurados calculan márgenes con un nivel de confianza nominal del <span className="font-semibold text-white">95%</span>, minimizando la probabilidad de falsos positivos en la estimación del coste de ruptura.
-            </p>
-          </div>
-        </div>
-      </VisualPanel>
-
-      {/* 2. INDICADORES ESTADÍSTICOS (Punto 2 - KPIs Formales) */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Indicadores Estadísticos Clave</h3>
-        <div className="grid gap-4 md:grid-cols-4">
-          <MetricCard
-            label="Media (execution_time_attack)"
-            value={evidence.attackTimeMean ? `${formatMetric(evidence.attackTimeMean, 4)} s` : "—"}
-            detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.mean"
-            accent="text-fuchsia-300"
-          />
-          <MetricCard
-            label="Desviación Estándar"
-            value={evidence.attackTimeStd ? `${formatMetric(evidence.attackTimeStd, 4)} s` : "—"}
-            detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.std"
-            accent="text-rose-300"
-          />
-          <MetricCard
-            label="Media de Intentos"
-            value={evidence.attemptsMean ? formatScientific(evidence.attemptsMean) : "—"}
-            detail="Ruta: distributions.data[0].summary.numeric_stats.attempts.mean"
-            accent="text-cyan-300"
-          />
-          <MetricCard
-            label="Espacio de Búsqueda Medio"
-            value={evidence.searchSpaceMean ? formatScientific(evidence.searchSpaceMean) : "—"}
-            detail="Ruta: distributions.data[0].summary.numeric_stats.search_space.mean"
-            accent="text-emerald-300"
-          />
-          <MetricCard
-            label="Mediana (log2 space)"
-            value={evidence.numericStats["log2_search_space"]?.["50%"] ? `${formatMetric(evidence.numericStats["log2_search_space"]?.["50%"], 2)} bits` : "—"}
-            detail="Ruta: distributions.data[0].summary.numeric_stats.log2_search_space.50%"
-            accent="text-amber-300"
-          />
-          <MetricCard
-            label="Tiempo Máximo de Ruptura"
-            value={evidence.maxAttackTime ? `${formatMetric(evidence.maxAttackTime, 4)} s` : "—"}
-            detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.max"
-            accent="text-violet-300"
-          />
-          <MetricCard
-            label="Coeficiente Variación (Tiempo)"
-            value={evidence.attackTimeMean && evidence.attackTimeStd ? `${((evidence.attackTimeStd / evidence.attackTimeMean) * 100).toFixed(2)}%` : "—"}
-            detail="Cálculo realizado: (std / mean) * 100"
-            accent="text-sky-300"
-          />
-          <MetricCard
-            label="Límite Superior Confianza"
-            value={confidenceIntervalsData[0]?.superior ? `${formatMetric(confidenceIntervalsData[0].superior, 4)} s` : "—"}
-            detail="Ruta: confidence_intervals.data[0].superior"
-            accent="text-indigo-300"
-          />
+      {/* Navegación por Secciones */}
+      <div className="mb-6 rounded-2xl border border-white/10 bg-slate-950/70 p-2">
+        <div className="flex flex-wrap gap-2">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                activeSection === section.id
+                  ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              }`}
+            >
+              <span>{section.icon}</span>
+              <span className="hidden sm:inline">{section.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 3. DISTRIBUCIONES (Punto 3 - Histograma) */}
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+      {/* SECCIÓN: Resumen Ejecutivo */}
+      {activeSection === "resumen" && (
+        <VisualPanel
+          title="Resumen Ejecutivo"
+          subtitle="Evidencia agregada extraída directamente de probabilities.json"
+        >
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+              <span className="text-[11px] font-mono text-cyan-400">Ruta: distributions.summary</span>
+              <h4 className="mt-2 text-lg font-semibold text-white">Conjuntos Analizados</h4>
+              <p className="mt-1 text-sm text-slate-400">
+                Se han procesado un total de <span className="font-semibold text-white">{evidence.filesCount}</span> archivos CSV de métricas estocásticas, conteniendo un total de <span className="font-semibold text-white">{formatMetric(evidence.recordsCount, 0)}</span> observaciones criptográficas.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+              <span className="text-[11px] font-mono text-cyan-400">Ruta: distributions.data[0].quality</span>
+              <h4 className="mt-2 text-lg font-semibold text-white">Consistencia y Calidad</h4>
+              <p className="mt-1 text-sm text-slate-400">
+                La fracción de filas vacías identificadas en el dataset es de <span className="font-semibold text-white">{(evidence.quality?.empty_rows_fraction * 100 || 0).toFixed(4)}%</span>, garantizando que el análisis cuenta con alta integridad operativa.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+              <span className="text-[11px] font-mono text-cyan-400">Ruta: confidence_intervals</span>
+              <h4 className="mt-2 text-lg font-semibold text-white">Modelado Probabilístico</h4>
+              <p className="mt-1 text-sm text-slate-400">
+                Los intervalos de confianza estructurados calculan márgenes con un nivel de confianza nominal del <span className="font-semibold text-white">95%</span>, minimizando la probabilidad de falsos positivos en la estimación del coste de ruptura.
+              </p>
+            </div>
+          </div>
+        </VisualPanel>
+      )}
+
+      {/* SECCIÓN: Indicadores Estadísticos */}
+      {activeSection === "estadisticos" && (
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-4">Indicadores Estadísticos Clave</h3>
+          <div className="grid gap-4 md:grid-cols-4">
+            <MetricCard
+              label="Media (execution_time_attack)"
+              value={evidence.attackTimeMean ? `${formatMetric(evidence.attackTimeMean, 4)} s` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.mean"
+              accent="text-fuchsia-300"
+            />
+            <MetricCard
+              label="Desviación Estándar"
+              value={evidence.attackTimeStd ? `${formatMetric(evidence.attackTimeStd, 4)} s` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.std"
+              accent="text-rose-300"
+            />
+            <MetricCard
+              label="Media de Intentos"
+              value={evidence.attemptsMean ? formatScientific(evidence.attemptsMean) : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.attempts.mean"
+              accent="text-cyan-300"
+            />
+            <MetricCard
+              label="Espacio de Búsqueda Medio"
+              value={evidence.searchSpaceMean ? formatScientific(evidence.searchSpaceMean) : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.search_space.mean"
+              accent="text-emerald-300"
+            />
+            <MetricCard
+              label="Mediana (log2 space)"
+              value={evidence.numericStats["log2_search_space"]?.["50%"] ? `${formatMetric(evidence.numericStats["log2_search_space"]?.["50%"], 2)} bits` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.log2_search_space.50%"
+              accent="text-amber-300"
+            />
+            <MetricCard
+              label="Tiempo Máximo de Ruptura"
+              value={evidence.maxAttackTime ? `${formatMetric(evidence.maxAttackTime, 4)} s` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.max"
+              accent="text-violet-300"
+            />
+            <MetricCard
+              label="Coeficiente Variación (Tiempo)"
+              value={evidence.attackTimeMean && evidence.attackTimeStd ? `${((evidence.attackTimeStd / evidence.attackTimeMean) * 100).toFixed(2)}%` : "—"}
+              detail="Cálculo realizado: (std / mean) * 100"
+              accent="text-sky-300"
+            />
+            <MetricCard
+              label="Límite Superior Confianza"
+              value={confidenceIntervalsData[0]?.superior ? `${formatMetric(confidenceIntervalsData[0].superior, 4)} s` : "—"}
+              detail="Ruta: confidence_intervals.data[0].superior"
+              accent="text-indigo-300"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* SECCIÓN: Distribuciones */}
+      {activeSection === "distribuciones" && (
         <VisualPanel
           title="Densidad Empírica Acumulada"
           subtitle="Distribución de frecuencias por intervalos para execution_time_attack (Histograma Q-Q)"
@@ -391,8 +408,10 @@ export default function ProbabilidadPage() {
             <span className="font-semibold text-slate-400">Justificación Técnica:</span> Se ha seleccionado un gráfico de área acumulada (densidad) porque permite visualizar la asimetría de la distribución del tiempo de ataque, demostrando que el 75% de los vectores de ataque son vulnerados en el primer cuartil temporal (distribución sesgada a la izquierda).
           </p>
         </VisualPanel>
+      )}
 
-        {/* 4. CORRELACIONES (Punto 4 - Matriz de Calor Analítica) */}
+      {/* SECCIÓN: Correlaciones */}
+      {activeSection === "correlaciones" && (
         <VisualPanel
           title="Matriz de Correlación Lineal"
           subtitle="Coeficientes de Pearson analizados entre variables criptográficas"
@@ -400,7 +419,6 @@ export default function ProbabilidadPage() {
           <div className="space-y-3">
             {correlationMatrix.map((item: any, idx: number) => {
               const isPositive = item.r > 0;
-              const intensity = Math.abs(item.r);
               const colorClass = isPositive ? "text-emerald-400" : "text-rose-400";
               const bgClass = isPositive ? "bg-emerald-500/10" : "bg-rose-500/10";
               return (
@@ -429,12 +447,10 @@ export default function ProbabilidadPage() {
             <span className="font-semibold text-slate-400">Interpretación Visual:</span> La correlación de Pearson más crítica se encuentra en <span className="text-slate-300">Entropía vs Intentos (+0.95)</span>, confirmando una dependencia lineal directa que convalida empíricamente la solidez matemática de la entropía de Shannon.
           </p>
         </VisualPanel>
-      </div>
+      )}
 
-      {/* 5. MODELOS DE REGRESIÓN (Punto 5) & 6. INTERVALOS DE CONFIANZA (Punto 6) */}
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        
-        {/* Regresión */}
+      {/* SECCIÓN: Regresión */}
+      {activeSection === "regresion" && (
         <VisualPanel
           title="Modelo de Regresión Lineal"
           subtitle="Ajuste polinómico de la carga de cómputo en función de la entropía"
@@ -461,8 +477,10 @@ export default function ProbabilidadPage() {
             </div>
           </div>
         </VisualPanel>
+      )}
 
-        {/* Intervalos de Confianza */}
+      {/* SECCIÓN: Intervalos de Confianza */}
+      {activeSection === "intervalos" && (
         <VisualPanel
           title="Intervalos de Confianza Calculados"
           subtitle="Verificación del margen de error empírico (Nivel de confianza: 95%)"
@@ -493,10 +511,10 @@ export default function ProbabilidadPage() {
             ))}
           </div>
         </VisualPanel>
-      </div>
+      )}
 
-      {/* 7. ANÁLISIS COMBINATORIO (Punto 7) & 8. COMPARATIVAS (Punto 8) */}
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+      {/* SECCIÓN: Análisis Combinatorio */}
+      {activeSection === "combinatorio" && (
         <VisualPanel
           title="Espacio de Trabajo Combinatorio"
           subtitle="Crecimiento exponencial del espacio de soluciones según la entropía"
@@ -514,7 +532,10 @@ export default function ProbabilidadPage() {
             </p>
           </div>
         </VisualPanel>
+      )}
 
+      {/* SECCIÓN: Comparativas */}
+      {activeSection === "comparativas" && (
         <VisualPanel
           title="Comparativa de Modelos Probabilísticos"
           subtitle="Comparación del rendimiento estadístico de las regresiones evaluadas"
@@ -534,143 +555,148 @@ export default function ProbabilidadPage() {
             </div>
           </div>
         </VisualPanel>
-      </div>
+      )}
 
-      {/* 9. DATOS COMPLETOS: TABLA INTERACTIVA (Punto 9) */}
-      <VisualPanel
-        title="Base de Datos del Análisis Estadístico"
-        subtitle="Exploración en tiempo real y descarga de metadatos desde probabilities.json"
-      >
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <input
-            type="text"
-            placeholder="Buscar por nombre de archivo o ruta..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2 text-sm text-slate-200 outline-none ring-1 ring-white/5 focus:border-cyan-400 sm:max-w-xs"
-          />
-          <button
-            onClick={exportToCSV}
-            className="rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20"
-          >
-            Exportar CSV
-          </button>
-        </div>
+      {/* SECCIÓN: Datos Completos */}
+      {activeSection === "datos" && (
+        <VisualPanel
+          title="Base de Datos del Análisis Estadístico"
+          subtitle="Exploración en tiempo real y descarga de metadatos desde probabilities.json"
+        >
+          <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <input
+              type="text"
+              placeholder="Buscar por nombre de archivo o ruta..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-2 text-sm text-slate-200 outline-none ring-1 ring-white/5 focus:border-cyan-400 sm:max-w-xs"
+            />
+            <button
+              onClick={exportToCSV}
+              className="rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20"
+            >
+              Exportar CSV
+            </button>
+          </div>
 
-        <div className="overflow-x-auto rounded-xl border border-white/5 bg-slate-950/40">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-white/10 bg-slate-950/80 text-slate-400 uppercase tracking-wider">
-                <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort("id")}>ID</th>
-                <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort("name")}>Archivo</th>
-                <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort("path")}>Ruta</th>
-                <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("rows")}>Observaciones</th>
-                <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("columnsCount")}>Variables</th>
-                <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("duplicates")}>Duplicados</th>
-                <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("memory")}>Memoria</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedFiles.map((file: any) => (
-                <tr key={file.id} className="border-b border-white/5 hover:bg-slate-900/40 text-slate-300">
-                  <td className="p-3 font-mono">{file.id}</td>
-                  <td className="p-3 font-medium text-white">{file.name}</td>
-                  <td className="p-3 text-slate-500 font-mono text-[10px]">{file.path}</td>
-                  <td className="p-3 text-right">{formatMetric(file.rows, 0)}</td>
-                  <td className="p-3 text-right">{file.columnsCount}</td>
-                  <td className="p-3 text-right text-rose-400">{file.duplicates}</td>
-                  <td className="p-3 text-right font-mono">{formatBytes(file.memory)}</td>
+          <div className="overflow-x-auto rounded-xl border border-white/5 bg-slate-950/40">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-white/10 bg-slate-950/80 text-slate-400 uppercase tracking-wider">
+                  <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort("id")}>ID</th>
+                  <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort("name")}>Archivo</th>
+                  <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort("path")}>Ruta</th>
+                  <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("rows")}>Observaciones</th>
+                  <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("columnsCount")}>Variables</th>
+                  <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("duplicates")}>Duplicados</th>
+                  <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort("memory")}>Memoria</th>
                 </tr>
+              </thead>
+              <tbody>
+                {paginatedFiles.map((file: any) => (
+                  <tr key={file.id} className="border-b border-white/5 hover:bg-slate-900/40 text-slate-300">
+                    <td className="p-3 font-mono">{file.id}</td>
+                    <td className="p-3 font-medium text-white">{file.name}</td>
+                    <td className="p-3 text-slate-500 font-mono text-[10px]">{file.path}</td>
+                    <td className="p-3 text-right">{formatMetric(file.rows, 0)}</td>
+                    <td className="p-3 text-right">{file.columnsCount}</td>
+                    <td className="p-3 text-right text-rose-400">{file.duplicates}</td>
+                    <td className="p-3 text-right font-mono">{formatBytes(file.memory)}</td>
+                  </tr>
+                ))}
+                {paginatedFiles.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                      No se encontraron registros que coincidan con la búsqueda.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+              <p>Mostrando {paginatedFiles.length} de {filteredFiles.length} archivos</p>
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((c) => Math.max(1, c - 1))}
+                  className="rounded-lg bg-slate-900 px-3 py-1 border border-white/5 disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))}
+                  className="rounded-lg bg-slate-900 px-3 py-1 border border-white/5 disabled:opacity-50"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          )}
+        </VisualPanel>
+      )}
+
+      {/* SECCIÓN: Conclusiones */}
+      {activeSection === "conclusiones" && (
+        <VisualPanel
+          title="Conclusiones del Análisis Probabilístico"
+          subtitle="Hallazgos generados de manera heurística a partir del archivo JSON"
+        >
+          <ul className="space-y-4 text-sm leading-7 text-slate-300">
+            <li className="flex gap-3 items-start">
+              <span className="text-fuchsia-400 font-bold">I.</span>
+              <p>
+                La media real de la variable <span className="font-mono text-fuchsia-300">execution_time_attack</span> es de <span className="font-semibold text-white">{formatMetric(evidence.attackTimeMean, 4)} segundos</span>, respaldada científicamente por <span className="text-white">{evidence.recordsCount} observaciones empíricas</span> en la ruta <span className="font-mono text-xs bg-slate-950 px-1 py-0.5 rounded">distributions.data[0].summary.numeric_stats</span>.
+              </p>
+            </li>
+            <li className="flex gap-3 items-start">
+              <span className="text-rose-400 font-bold">II.</span>
+              <p>
+                El espacio de búsqueda de soluciones presenta un comportamiento puramente exponencial con un valor medio de <span className="font-semibold text-white">{formatScientific(evidence.searchSpaceMean)} combinaciones</span>, convalidado mediante la variable <span className="font-mono text-rose-300">search_space</span>.
+              </p>
+            </li>
+            <li className="flex gap-3 items-start">
+              <span className="text-cyan-400 font-bold">III.</span>
+              <p>
+                El coeficiente de determinación <span className="font-mono text-cyan-300">R² = 0.884</span> demuestra un alto grado de explicación del modelo lineal para estimar el coste temporal basándonos en la dimensión binaria del algoritmo criptográfico.
+              </p>
+            </li>
+          </ul>
+        </VisualPanel>
+      )}
+
+      {/* SECCIÓN: Datos No Utilizados */}
+      {activeSection === "conclusiones" && (
+        <VisualPanel
+          title="Informe de Auditoría de Datos No Utilizados"
+          subtitle="Métricas de probabilities.json identificadas pero no graficadas en este módulo"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-slate-400">
+              Con el objetivo de mantener la rigurosidad analítica, se enumeran los campos identificados en el archivo original que no se incorporaron al flujo dinámico primario, junto con su componente de ingeniería recomendado:
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {unusedDataReport.map((report, idx) => (
+                <div key={idx} className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-cyan-300 text-sm font-semibold">{report.nombre}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${report.prioridad === 'Alta' ? 'bg-rose-500/10 text-rose-300' : 'bg-amber-500/10 text-amber-300'}`}>
+                      Prioridad {report.prioridad}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-slate-300"><span className="text-slate-500">Objetivo:</span> {report.objetivo}</p>
+                  <p className="mt-1 font-mono text-[10px] text-slate-500"><span className="text-slate-500 font-sans">Ruta:</span> {report.ruta}</p>
+                  <p className="mt-1 text-slate-300"><span className="text-slate-500">Visualización Propuesta:</span> {report.visualizacion}</p>
+                  <p className="mt-2 text-slate-400 leading-5 italic">{report.justificacion}</p>
+                </div>
               ))}
-              {paginatedFiles.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">
-                    No se encontraron registros que coincidan con la búsqueda.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-            <p>Mostrando {paginatedFiles.length} de {filteredFiles.length} archivos</p>
-            <div className="flex gap-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((c) => Math.max(1, c - 1))}
-                className="rounded-lg bg-slate-900 px-3 py-1 border border-white/5 disabled:opacity-50"
-              >
-                Anterior
-              </button>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))}
-                className="rounded-lg bg-slate-900 px-3 py-1 border border-white/5 disabled:opacity-50"
-              >
-                Siguiente
-              </button>
             </div>
           </div>
-        )}
-      </VisualPanel>
-
-      {/* 10. HALLAZGOS AUTOMÁTICOS (Punto 10) */}
-      <VisualPanel
-        title="Conclusiones del Análisis Probabilístico"
-        subtitle="Hallazgos generados de manera heurística a partir del archivo JSON"
-      >
-        <ul className="space-y-4 text-sm leading-7 text-slate-300">
-          <li className="flex gap-3 items-start">
-            <span className="text-fuchsia-400 font-bold">I.</span>
-            <p>
-              La media real de la variable <span className="font-mono text-fuchsia-300">execution_time_attack</span> es de <span className="font-semibold text-white">{formatMetric(evidence.attackTimeMean, 4)} segundos</span>, respaldada científicamente por <span className="text-white">{evidence.recordsCount} observaciones empíricas</span> en la ruta <span className="font-mono text-xs bg-slate-950 px-1 py-0.5 rounded">distributions.data[0].summary.numeric_stats</span>.
-            </p>
-          </li>
-          <li className="flex gap-3 items-start">
-            <span className="text-rose-400 font-bold">II.</span>
-            <p>
-              El espacio de búsqueda de soluciones presenta un comportamiento puramente exponencial con un valor medio de <span className="font-semibold text-white">{formatScientific(evidence.searchSpaceMean)} combinaciones</span>, convalidado mediante la variable <span className="font-mono text-rose-300">search_space</span>.
-            </p>
-          </li>
-          <li className="flex gap-3 items-start">
-            <span className="text-cyan-400 font-bold">III.</span>
-            <p>
-              El coeficiente de determinación <span className="font-mono text-cyan-300">R² = 0.884</span> demuestra un alto grado de explicación del modelo lineal para estimar el coste temporal basándonos en la dimensión binaria del algoritmo criptográfico.
-            </p>
-          </li>
-        </ul>
-      </VisualPanel>
-
-      {/* 12. DATOS NO UTILIZADOS - INFORME (Punto 12) */}
-      <VisualPanel
-        title="Informe de Auditoría de Datos No Utilizados"
-        subtitle="Métricas de probabilities.json identificadas pero no graficadas en este módulo"
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-slate-400">
-            Con el objetivo de mantener la rigurosidad analítica, se enumeran los campos identificados en el archivo original que no se incorporaron al flujo dinámico primario, junto con su componente de ingeniería recomendado:
-          </p>
-          <div className="grid gap-4 md:grid-cols-2">
-            {unusedDataReport.map((report, idx) => (
-              <div key={idx} className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-cyan-300 text-sm font-semibold">{report.nombre}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${report.prioridad === 'Alta' ? 'bg-rose-500/10 text-rose-300' : 'bg-amber-500/10 text-amber-300'}`}>
-                    Prioridad {report.prioridad}
-                  </span>
-                </div>
-                <p className="mt-2 text-slate-300"><span className="text-slate-500">Objetivo:</span> {report.objetivo}</p>
-                <p className="mt-1 font-mono text-[10px] text-slate-500"><span className="text-slate-500 font-sans">Ruta:</span> {report.ruta}</p>
-                <p className="mt-1 text-slate-300"><span className="text-slate-500">Visualización Propuesta:</span> {report.visualizacion}</p>
-                <p className="mt-2 text-slate-400 leading-5 italic">{report.justificacion}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </VisualPanel>
-
+        </VisualPanel>
+      )}
     </DashboardShell>
   );
 }
