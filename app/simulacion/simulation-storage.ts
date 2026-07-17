@@ -1,98 +1,153 @@
 "use client";
 
-import { Algorithm } from "./crypto-systems";
+// ─── Canonical record model ───────────────────────────────────────────────────
+// Field names are intentionally kept in English camelCase so they align with
+// what page.tsx already reads (id, algorithm, operation, status, durationMs …).
+// Legacy keys (attack_id, algoritmo, attack_type …) are no longer used.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface SimulationRecord {
+  // Identity
   id: string;
-  timestamp: number;
-  algorithm: Algorithm;
-  operation: "encryption" | "decryption" | "attack";
-  inputText: string;
-  inputBytes: number;
-  keyLength?: number;
-  durationMs: number;
-  status: "success" | "failure";
+  timestamp: string; // ISO-8601
 
-  // Attack specific fields
-  totalAttackTimeMs?: number;
-  attempts?: number;
-  speedPerSecond?: number;
-  cpuUtilization?: number;
-  memoryBytes?: number;
-  progress?: number;
-  resultText?: string;
-  recoveredText?: string;
+  // Classification
+  algorithm: string;         // e.g. "AES-256-GCM", "RSA-OAEP 2048", "MD5", "SHA-256"
+  algorithmKey: string;      // e.g. "aes", "rsa", "md5", "sha256"
+  operation: "encryption" | "decryption" | "attack";
+
+  // Payload
+  originalText: string;      // plaintext / attacked value
+  messageSize: number;       // bytes of original text
+  ciphertext: string;        // ciphered output or hash digest
+  ciphertextSize: number;    // bytes of ciphertext
+  recoveredText?: string;    // text recovered after attack / decryption
+
+  // Key
+  keyLength: number;         // bits
+
+  // Timing
+  executionTimeMs: number;   // time for the crypto op itself
+  attackDurationMs: number;  // total time spent on attack (0 for enc/dec)
+
+  // Attack metrics
+  attempts: number;
+  attemptsPerSecond: number;
+  progress: number;          // 0-100 %
+
+  // Resources
+  cpuUtilization: number;   // 0-100 %
+  memoryBytes: number;
+
+  // Outcome
+  status: "success" | "failed";
+
+  // Theoretical
+  searchSpace: string;       // BigInt-safe string
+  log2SearchSpace: number;
+  successProbability: string;
 }
 
-const STORAGE_KEY = "crypto_simulation_history";
+// ─── Storage implementation ───────────────────────────────────────────────────
+
+const STORAGE_KEY = "crypto_simulation_history_v3";
+const MAX_RECORDS = 200;
 
 export class SimulationStorage {
-  static save(record: Omit<SimulationRecord, "id" | "timestamp">) {
-    if (typeof window === "undefined") return;
+  /** Save a new record; returns the saved record with generated id/timestamp. */
+  static save(record: Omit<SimulationRecord, "id" | "timestamp">): SimulationRecord {
+    if (typeof window === "undefined") return { id: "", timestamp: "", ...record };
 
     const history = this.getAll();
     const newRecord: SimulationRecord = {
       ...record,
-      id: Math.random().toString(36).substring(2, 11),
-      timestamp: Date.now(),
+      id: Math.random().toString(36).substring(2, 11).toUpperCase(),
+      timestamp: new Date().toISOString(),
     };
 
     history.unshift(newRecord);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, 100))); // Keep last 100 records
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, MAX_RECORDS)));
+    } catch {
+      // Storage quota exceeded — drop oldest half and retry
+      const trimmed = history.slice(0, Math.floor(MAX_RECORDS / 2));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    }
     return newRecord;
   }
 
   static getAll(): SimulationRecord[] {
     if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? (JSON.parse(stored) as SimulationRecord[]) : [];
+    } catch {
+      return [];
+    }
   }
 
-  static delete(id: string) {
-    const history = this.getAll().filter(r => r.id !== id);
+  static delete(id: string): void {
+    const history = this.getAll().filter((r) => r.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   }
 
-  static clear() {
+  static clear(): void {
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  static exportToCSV(records: SimulationRecord[]) {
+  // ── CSV export ──────────────────────────────────────────────────────────────
+
+  static exportToCSV(records: SimulationRecord[]): void {
     if (records.length === 0) return;
 
-    const headers = [
-      "ID", "Fecha", "Algoritmo", "Operación", "Tamaño Entrada (B)",
-      "Duración (ms)", "Estado", "Intentos", "Velocidad (c/s)",
-      "CPU (%)", "Memoria (MB)"
+    const headers: (keyof SimulationRecord)[] = [
+      "id",
+      "timestamp",
+      "algorithm",
+      "algorithmKey",
+      "operation",
+      "originalText",
+      "messageSize",
+      "ciphertext",
+      "ciphertextSize",
+      "recoveredText",
+      "keyLength",
+      "executionTimeMs",
+      "attackDurationMs",
+      "attempts",
+      "attemptsPerSecond",
+      "progress",
+      "cpuUtilization",
+      "memoryBytes",
+      "status",
+      "searchSpace",
+      "log2SearchSpace",
+      "successProbability",
     ];
 
-    const rows = records.map(r => [
-      r.id,
-      new Date(r.timestamp).toLocaleString(),
-      r.algorithm,
-      r.operation,
-      r.inputBytes,
-      r.durationMs.toFixed(2),
-      r.status,
-      r.attempts || "",
-      r.speedPerSecond?.toFixed(2) || "",
-      r.cpuUtilization?.toFixed(1) || "",
-      r.memoryBytes ? (r.memoryBytes / 1024 / 1024).toFixed(2) : ""
-    ]);
+    function csvCell(value: unknown): string {
+      if (value === undefined || value === null) return "";
+      const str = String(value);
+      // Wrap in quotes if the cell contains a comma, newline, or quote
+      if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.join(","))
-    ].join("\n");
+    const rows = records.map((r) => headers.map((h) => csvCell(r[h])).join(","));
+    const csvContent = [headers.join(","), ...rows].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
+    const bom = "\uFEFF"; // UTF-8 BOM for Excel compatibility
+    const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `historial_simulaciones_${new Date().toISOString().slice(0, 10)}.csv`);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `historial_cripto_${new Date().toISOString().slice(0, 10)}.csv`;
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }

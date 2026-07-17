@@ -9,9 +9,11 @@ export interface CryptoOperationResult {
   output: string;
   inputBytes: number;
   outputBytes: number;
+  expansion: number;
   durationMs: number;
   reversible: boolean;
   details: string[];
+  theoreticalComplexity: string;
   metadata: Record<string, string | number>;
 }
 
@@ -179,6 +181,7 @@ export async function encryptAes(plaintext: string, password: string): Promise<{
     key,
     encoder.encode(plaintext),
   );
+  const inputBytes = encoder.encode(plaintext).length;
   const ciphertext = new Uint8Array(encrypted);
   const envelope = [AES_PREFIX, AES_ITERATIONS, bytesToBase64(salt), bytesToBase64(iv), bytesToBase64(ciphertext)].join("$");
 
@@ -188,10 +191,12 @@ export async function encryptAes(plaintext: string, password: string): Promise<{
       algorithm: "aes",
       algorithmLabel: "AES-256-GCM",
       output: envelope,
-      inputBytes: encoder.encode(plaintext).length,
+      inputBytes,
       outputBytes: ciphertext.length,
+      expansion: ciphertext.length - inputBytes,
       durationMs: performance.now() - started,
       reversible: true,
+      theoreticalComplexity: "2^256",
       details: [
         "Clave AES de 256 bits derivada con PBKDF2-SHA-256",
         `${AES_ITERATIONS.toLocaleString("es-EC")} iteraciones de derivación`,

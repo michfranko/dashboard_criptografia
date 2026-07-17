@@ -1,24 +1,46 @@
-import { AES_ADDITIONAL_DATA, Algorithm, deriveAesKey, hashText, jwkModulusToHex, parseAesEnvelope } from "./crypto-systems";
+import {
+  AES_ADDITIONAL_DATA,
+  Algorithm,
+  deriveAesKey,
+  hashText,
+  jwkModulusToHex,
+  parseAesEnvelope,
+} from "./crypto-systems";
+
+// ─── Public types ─────────────────────────────────────────────────────────────
 
 export type AttackStrategy = "dictionary" | "bruteforce" | "trial-division";
 
 export interface AttackOptions {
   strategy: AttackStrategy;
+  /** Maximum wall-clock duration before the attack is stopped. */
   maxDurationMs: number;
+  /** Maximum number of candidate evaluations. */
   maxAttempts: number;
   dictionary?: string[];
   charset?: string[];
   maxCandidateLength?: number;
+  /** Pass an AbortSignal to cancel the attack from outside. */
+  abortSignal?: AbortSignal;
+  /**
+   * How long (ms) without any progress before the attack is considered stalled.
+   * A value of 0 disables stall detection.
+   * Default: 15 000 ms.
+   */
+  stallTimeoutMs?: number;
 }
 
 export interface AttackSnapshot {
   elapsedMs: number;
   attempts: number;
   speedPerSecond: number;
+  /** 0-100 */
   progress: number;
   searchSize: bigint | number;
   memoryBytes: number;
   cpuUtilization: number;
+  /** Estimated remaining milliseconds (-1 = unknown). */
+  estimatedRemainingMs: number;
   status: "running" | "succeeded" | "failed";
   reason: string;
   currentCandidate?: string;
@@ -29,219 +51,307 @@ export interface AttackResult extends AttackSnapshot {
   foundCandidate?: string;
 }
 
-const commonDictionary = [
-  "123456",
-  "password",
-  "123456789",
-  "12345678",
-  "qwerty",
-  "abc123",
-  "password1",
-  "111111",
-  "1234567",
-  "iloveyou",
-  "admin",
-  "welcome",
-  "letmein",
-  "monkey",
-  "dragon",
-  "sunshine",
-  "princess",
-  "master",
-  "shadow",
-  "football",
+// ─── Common word list for dictionary attacks ──────────────────────────────────
+
+const commonDictionary: string[] = [
+  "123456", "password", "123456789", "12345678", "qwerty", "abc123",
+  "password1", "111111", "1234567", "iloveyou", "admin", "welcome",
+  "letmein", "monkey", "dragon", "sunshine", "princess", "master",
+  "shadow", "football", "pass", "test", "hello", "secret", "root",
+  "user", "guest", "login", "access", "1q2w3e", "qwerty123",
 ];
 
-function sampleMemoryUsage() {
-  const perf = performance as typeof performance & { memory?: { usedJSHeapSize: number } };
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
+function sampleMemoryUsage(): number {
+  const perf = performance as typeof performance & {
+    memory?: { usedJSHeapSize: number };
+  };
   return perf.memory?.usedJSHeapSize ?? 0;
 }
 
-function buildCharsetFromText(value: string) {
-  const set = new Set<string>();
-  for (const char of value) set.add(char);
-  if (set.size === 0) {
-    return ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
-  }
-  return Array.from(set);
-}
-
-function* bruteForceGenerator(charset: string[], maxLength: number) {
-  if (maxLength <= 0) return;
-  const length = charset.length;
-  for (let targetLength = 1; targetLength <= maxLength; targetLength += 1) {
-    const indices = new Array<number>(targetLength).fill(0);
-    while (true) {
-      yield indices.map((index) => charset[index]).join("");
-      let position = targetLength - 1;
-      while (position >= 0) {
-        indices[position] += 1;
-        if (indices[position] < length) break;
-        indices[position] = 0;
-        position -= 1;
-      }
-      if (position < 0) break;
-    }
-  }
-}
-
-function formatProgress(attempts: number, total: bigint | number) {
+function formatProgress(attempts: number, total: bigint | number): number {
   if (typeof total === "bigint") {
-    const zero = BigInt(0);
-    const scale = BigInt(10000);
-    if (total === zero) return 0;
+    if (total === BigInt(0)) return 0;
+    const scale = BigInt(10_000);
     return Number((BigInt(attempts) * scale) / total) / 100;
   }
   return total > 0 ? Math.min(100, (attempts / total) * 100) : 0;
 }
 
-function calculateCpuUtilization(elapsedMs: number, busyMs: number) {
-  if (elapsedMs <= 0) return 0;
-  return Math.min(100, (busyMs / elapsedMs) * 100);
+function calculateCpuUtilization(elapsedMs: number, busyMs: number): number {
+  return elapsedMs <= 0 ? 0 : Math.min(100, (busyMs / elapsedMs) * 100);
 }
 
-async function calculateCandidateHash(algorithm: Algorithm, candidate: string): Promise<string> {
+function estimateRemaining(
+  attempts: number,
+  total: bigint | number,
+  speedPerSecond: number,
+): number {
+  if (speedPerSecond <= 0) return -1;
+  const remaining =
+    typeof total === "bigint"
+      ? Number(total) - attempts
+      : total - attempts;
+  if (remaining <= 0) return 0;
+  return (remaining / speedPerSecond) * 1000;
+}
+
+/**
+ * Yields every few iterations to let the event loop breathe, but ONLY if
+ * needed (skips the yield when the loop is running fast enough).
+ */
+async function breathe(attempts: number, every = 20): Promise<void> {
+  if (attempts % every === 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+}
+
+// ─── Termination helpers ──────────────────────────────────────────────────────
+
+type StopReason =
+  | "found"
+  | "maxAttempts"
+  | "maxDuration"
+  | "aborted"
+  | "stall"
+  | "exhausted";
+
+interface StopCheck {
+  stopped: boolean;
+  reason: StopReason;
+}
+
+function checkStop(
+  attempts: number,
+  elapsedMs: number,
+  options: AttackOptions,
+  lastProgressMs: number,
+): StopCheck {
+  if (options.abortSignal?.aborted) {
+    return { stopped: true, reason: "aborted" };
+  }
+  if (attempts >= options.maxAttempts) {
+    return { stopped: true, reason: "maxAttempts" };
+  }
+  if (elapsedMs >= options.maxDurationMs) {
+    return { stopped: true, reason: "maxDuration" };
+  }
+  const stallTimeout = options.stallTimeoutMs ?? 15_000;
+  if (stallTimeout > 0 && performance.now() - lastProgressMs > stallTimeout) {
+    return { stopped: true, reason: "stall" };
+  }
+  return { stopped: false, reason: "exhausted" };
+}
+
+function reasonLabel(r: StopReason): string {
+  switch (r) {
+    case "maxAttempts": return "Se alcanzó el límite máximo de intentos configurado.";
+    case "maxDuration": return "Se alcanzó el límite máximo de tiempo configurado.";
+    case "aborted": return "Ataque cancelado por el usuario.";
+    case "stall": return "Ataque detenido por falta de progreso prolongado.";
+    case "exhausted": return "Se agotó el espacio de búsqueda sin encontrar el valor.";
+    default: return "";
+  }
+}
+
+// ─── Brute-force generator ────────────────────────────────────────────────────
+
+function* bruteForceGenerator(charset: string[], maxLength: number): Generator<string> {
+  if (maxLength <= 0) return;
+  const length = charset.length;
+  for (let targetLength = 1; targetLength <= maxLength; targetLength += 1) {
+    const indices = new Array<number>(targetLength).fill(0);
+    while (true) {
+      yield indices.map((i) => charset[i]).join("");
+      let pos = targetLength - 1;
+      while (pos >= 0) {
+        indices[pos] += 1;
+        if (indices[pos] < length) break;
+        indices[pos] = 0;
+        pos -= 1;
+      }
+      if (pos < 0) break;
+    }
+  }
+}
+
+// ─── Hash candidate helper ────────────────────────────────────────────────────
+
+async function candidateHash(algorithm: Algorithm, candidate: string): Promise<string> {
   return algorithm === "md5" ? hashText("md5", candidate) : hashText("sha256", candidate);
 }
 
-async function runDictionaryAttack(targetHash: string, algorithm: Algorithm, options: AttackOptions, onUpdate: (snapshot: AttackSnapshot) => void): Promise<AttackResult> {
+// ─── Dictionary attack (MD5 / SHA-256) ───────────────────────────────────────
+
+async function runDictionaryAttack(
+  targetHash: string,
+  algorithm: Algorithm,
+  options: AttackOptions,
+  onUpdate: (s: AttackSnapshot) => void,
+): Promise<AttackResult> {
   const dictionary = [...(options.dictionary ?? []), ...commonDictionary];
   const total = dictionary.length;
   const started = performance.now();
-  let attempts = 0;
   let busyMs = 0;
+  let attempts = 0;
+  let lastProgressMs = performance.now();
 
   for (const candidate of dictionary) {
     const stepStart = performance.now();
     attempts += 1;
-    const candidateHash = await calculateCandidateHash(algorithm, candidate);
+    const hash = await candidateHash(algorithm, candidate);
     busyMs += performance.now() - stepStart;
+    lastProgressMs = performance.now(); // dictionary always makes progress
 
     const elapsedMs = performance.now() - started;
+    const speed = attempts / Math.max(1, elapsedMs / 1000);
     const progress = formatProgress(attempts, total);
-    onUpdate({
+    const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
-      speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
+      speedPerSecond: speed,
       progress,
       searchSize: total,
       memoryBytes: sampleMemoryUsage(),
       cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      estimatedRemainingMs: estimateRemaining(attempts, total, speed),
       status: "running",
       reason: "Explorando diccionario de contraseñas.",
       currentCandidate: candidate,
-    });
+    };
+    onUpdate(snap);
 
-    if (candidateHash === targetHash) {
+    if (hash === targetHash) {
       return {
+        ...snap,
         elapsedMs: performance.now() - started,
-        attempts,
-        speedPerSecond: attempts / Math.max(1, (performance.now() - started) / 1000),
         progress: 100,
-        searchSize: total,
-        memoryBytes: sampleMemoryUsage(),
-        cpuUtilization: calculateCpuUtilization(performance.now() - started, busyMs),
         status: "succeeded",
         reason: "Valor recuperado por ataque de diccionario.",
+        estimatedRemainingMs: 0,
         found: true,
         foundCandidate: candidate,
       };
     }
 
-    if (attempts >= options.maxAttempts || elapsedMs >= options.maxDurationMs) {
-      break;
+    const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
+    if (stop.stopped) {
+      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
     }
 
-    if (attempts % 5 === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+    await breathe(attempts, 10);
   }
 
   const elapsedMs = performance.now() - started;
+  const speed = attempts / Math.max(1, elapsedMs / 1000);
   return {
     elapsedMs,
     attempts,
-    speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
+    speedPerSecond: speed,
     progress: formatProgress(attempts, total),
     searchSize: total,
     memoryBytes: sampleMemoryUsage(),
     cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    estimatedRemainingMs: 0,
     status: "failed",
-    reason: "El valor no fue encontrado dentro del diccionario explorado.",
+    reason: reasonLabel("exhausted"),
     found: false,
   };
 }
 
-async function runBruteForceHashAttack(targetHash: string, algorithm: Algorithm, options: AttackOptions, onUpdate: (snapshot: AttackSnapshot) => void): Promise<AttackResult> {
-  const charset = options.charset && options.charset.length > 0 ? options.charset : ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+// ─── Brute-force hash attack (MD5 / SHA-256 pre-image search) ────────────────
+
+async function runBruteForceHashAttack(
+  targetHash: string,
+  algorithm: Algorithm,
+  options: AttackOptions,
+  onUpdate: (s: AttackSnapshot) => void,
+): Promise<AttackResult> {
+  const charset =
+    options.charset && options.charset.length > 0
+      ? options.charset
+      : ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p",
+         "q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9"];
   const maxLength = options.maxCandidateLength ?? 5;
+  const totalCandidates = BigInt(charset.length) ** BigInt(maxLength);
   const started = performance.now();
   let busyMs = 0;
   let attempts = 0;
-  const totalCandidates = BigInt(charset.length) ** BigInt(maxLength);
+  let lastProgressMs = performance.now();
 
   for (const candidate of bruteForceGenerator(charset, maxLength)) {
     const stepStart = performance.now();
     attempts += 1;
-    const candidateHash = await calculateCandidateHash(algorithm, candidate);
+    const hash = await candidateHash(algorithm, candidate);
     busyMs += performance.now() - stepStart;
+    lastProgressMs = performance.now();
 
     const elapsedMs = performance.now() - started;
+    const speed = attempts / Math.max(1, elapsedMs / 1000);
     const progress = formatProgress(attempts, totalCandidates);
-    onUpdate({
+    const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
-      speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
+      speedPerSecond: speed,
       progress,
       searchSize: totalCandidates,
       memoryBytes: sampleMemoryUsage(),
       cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      estimatedRemainingMs: estimateRemaining(attempts, totalCandidates, speed),
       status: "running",
       reason: "Explorando el espacio de búsqueda por fuerza bruta.",
       currentCandidate: candidate,
-    });
+    };
+    onUpdate(snap);
 
-    if (candidateHash === targetHash) {
+    if (hash === targetHash) {
       return {
+        ...snap,
         elapsedMs: performance.now() - started,
-        attempts,
-        speedPerSecond: attempts / Math.max(1, (performance.now() - started) / 1000),
         progress: 100,
-        searchSize: totalCandidates,
-        memoryBytes: sampleMemoryUsage(),
-        cpuUtilization: calculateCpuUtilization(performance.now() - started, busyMs),
         status: "succeeded",
         reason: "Valor recuperado por fuerza bruta.",
+        estimatedRemainingMs: 0,
         found: true,
         foundCandidate: candidate,
       };
     }
 
-    if (attempts >= options.maxAttempts || elapsedMs >= options.maxDurationMs) {
-      break;
+    const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
+    if (stop.stopped) {
+      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
     }
 
-    if (attempts % 20 === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+    await breathe(attempts, 20);
   }
 
   const elapsedMs = performance.now() - started;
+  const speed = attempts / Math.max(1, elapsedMs / 1000);
   return {
     elapsedMs,
     attempts,
-    speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
+    speedPerSecond: speed,
     progress: formatProgress(attempts, totalCandidates),
     searchSize: totalCandidates,
     memoryBytes: sampleMemoryUsage(),
     cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    estimatedRemainingMs: 0,
     status: "failed",
-    reason: "El valor no fue encontrado dentro del espacio de búsqueda explorado.",
+    reason: reasonLabel("exhausted"),
     found: false,
   };
 }
 
-export async function attackHash(algorithm: Algorithm, plainText: string, strategy: AttackStrategy, options: AttackOptions, onUpdate: (snapshot: AttackSnapshot) => void): Promise<AttackResult> {
+// ─── Public: attack hash (MD5 / SHA-256) ─────────────────────────────────────
+
+export async function attackHash(
+  algorithm: Algorithm,
+  plainText: string,
+  strategy: AttackStrategy,
+  options: AttackOptions,
+  onUpdate: (s: AttackSnapshot) => void,
+): Promise<AttackResult> {
   const targetHash = await hashText(algorithm, plainText);
   if (strategy === "dictionary") {
     return runDictionaryAttack(targetHash, algorithm, options, onUpdate);
@@ -249,164 +359,199 @@ export async function attackHash(algorithm: Algorithm, plainText: string, strate
   return runBruteForceHashAttack(targetHash, algorithm, options, onUpdate);
 }
 
-async function* trialDivisorGenerator(maxAttempts: number) {
+// ─── RSA trial-division ───────────────────────────────────────────────────────
+
+async function* trialDivisorGenerator(maxAttempts: number): AsyncGenerator<bigint> {
+  // Test 2 first, then odd numbers
+  yield BigInt(2);
   let divisor = BigInt(3);
   const step = BigInt(2);
-  let attempts = 0;
-  while (attempts < maxAttempts) {
+  let count = 1;
+  while (count < maxAttempts) {
     yield divisor;
     divisor += step;
-    attempts += 1;
+    count += 1;
   }
 }
 
-export async function attackRsa(publicJwk: JsonWebKey, options: AttackOptions, onUpdate: (snapshot: AttackSnapshot) => void): Promise<AttackResult> {
-  if (!publicJwk.n) {
-    throw new Error("Clave pública RSA sin módulo.");
-  }
+export async function attackRsa(
+  publicJwk: JsonWebKey,
+  options: AttackOptions,
+  onUpdate: (s: AttackSnapshot) => void,
+): Promise<AttackResult> {
+  if (!publicJwk.n) throw new Error("Clave pública RSA sin módulo.");
+
   const modulusHex = jwkModulusToHex(publicJwk);
   const modulus = BigInt(`0x${modulusHex}`);
+  const total = BigInt(options.maxAttempts);
   const started = performance.now();
   let busyMs = 0;
   let attempts = 0;
-  const total = BigInt(options.maxAttempts);
+  let lastProgressMs = performance.now();
 
   for await (const divisor of trialDivisorGenerator(options.maxAttempts)) {
     const stepStart = performance.now();
     attempts += 1;
     const remainder = modulus % divisor;
     busyMs += performance.now() - stepStart;
+    lastProgressMs = performance.now();
 
     const elapsedMs = performance.now() - started;
+    const speed = attempts / Math.max(1, elapsedMs / 1000);
     const progress = formatProgress(attempts, total);
-    onUpdate({
+    const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
-      speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
+      speedPerSecond: speed,
       progress,
       searchSize: total,
       memoryBytes: sampleMemoryUsage(),
       cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      estimatedRemainingMs: estimateRemaining(attempts, total, speed),
       status: "running",
-      reason: "Attempting to factor modulus with trial division.",
+      reason: "Intentando factorizar el módulo RSA por división de prueba.",
       currentCandidate: divisor.toString(),
-    });
+    };
+    onUpdate(snap);
 
     if (remainder === BigInt(0)) {
       const factor = divisor;
       const complement = modulus / factor;
       return {
+        ...snap,
         elapsedMs: performance.now() - started,
-        attempts,
-        speedPerSecond: attempts / Math.max(1, (performance.now() - started) / 1000),
         progress: 100,
-        searchSize: total,
-        memoryBytes: sampleMemoryUsage(),
-        cpuUtilization: calculateCpuUtilization(performance.now() - started, busyMs),
         status: "succeeded",
         reason: "Clave privada reconstruida mediante factorización.",
+        estimatedRemainingMs: 0,
         found: true,
         foundCandidate: `${factor.toString()} × ${complement.toString()}`,
       };
     }
 
-    if (elapsedMs >= options.maxDurationMs) {
-      break;
+    const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
+    if (stop.stopped) {
+      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
     }
 
-    if (attempts % 10 === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+    // RSA BigInt arithmetic is slow; yield every 10 iterations
+    await breathe(attempts, 10);
   }
 
   const elapsedMs = performance.now() - started;
+  const speed = attempts / Math.max(1, elapsedMs / 1000);
   return {
     elapsedMs,
     attempts,
-    speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
+    speedPerSecond: speed,
     progress: formatProgress(attempts, total),
     searchSize: total,
     memoryBytes: sampleMemoryUsage(),
     cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    estimatedRemainingMs: 0,
     status: "failed",
     reason: "El ataque de factorización alcanzó el límite de exploración sin recuperar la clave privada.",
     found: false,
   };
 }
 
-export async function attackAes(envelope: string, knownPlaintext: string | null, options: AttackOptions, onUpdate: (snapshot: AttackSnapshot) => void): Promise<AttackResult> {
+// ─── AES brute-force ──────────────────────────────────────────────────────────
+
+export async function attackAes(
+  envelope: string,
+  knownPlaintext: string | null,
+  options: AttackOptions,
+  onUpdate: (s: AttackSnapshot) => void,
+): Promise<AttackResult> {
   const parsed = parseAesEnvelope(envelope);
-  const charset = options.charset && options.charset.length > 0 ? options.charset : ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"];
+  const charset =
+    options.charset && options.charset.length > 0
+      ? options.charset
+      : ["0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"];
   const targetLength = options.maxCandidateLength ?? 6;
   const totalSpace = BigInt(charset.length) ** BigInt(targetLength);
   const started = performance.now();
   let busyMs = 0;
   let attempts = 0;
+  let lastProgressMs = performance.now();
 
   for (const candidate of bruteForceGenerator(charset, targetLength)) {
     const stepStart = performance.now();
     attempts += 1;
+
+    let decrypted: string | null = null;
     try {
       const key = await deriveAesKey(candidate, parsed.salt, "decrypt");
-      const decryptedBuffer = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: parsed.iv as BufferSource, additionalData: AES_ADDITIONAL_DATA as BufferSource, tagLength: 128 },
+      const buffer = await crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv: parsed.iv as BufferSource,
+          additionalData: AES_ADDITIONAL_DATA as BufferSource,
+          tagLength: 128,
+        },
         key,
         parsed.ciphertext as BufferSource,
       );
-      const decrypted = new TextDecoder().decode(decryptedBuffer);
-      if (knownPlaintext !== null && decrypted === knownPlaintext) {
-        busyMs += performance.now() - stepStart;
-        const elapsedMs = performance.now() - started;
-        return {
-          elapsedMs,
-          attempts,
-          speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
-          progress: 100,
-          searchSize: totalSpace,
-          memoryBytes: sampleMemoryUsage(),
-          cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
-          status: "succeeded",
-          reason: "Clave AES recuperada con éxito.",
-          found: true,
-          foundCandidate: candidate,
-        };
-      }
+      decrypted = new TextDecoder().decode(buffer);
     } catch {
-      // decryption failed, continue
+      // Wrong key — decryption failure is expected
     }
     busyMs += performance.now() - stepStart;
+    lastProgressMs = performance.now();
 
     const elapsedMs = performance.now() - started;
-    onUpdate({
+    const speed = attempts / Math.max(1, elapsedMs / 1000);
+    const progress = formatProgress(attempts, totalSpace);
+    const snap: AttackSnapshot = {
       elapsedMs,
       attempts,
-      speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
-      progress: formatProgress(attempts, totalSpace),
+      speedPerSecond: speed,
+      progress,
       searchSize: totalSpace,
       memoryBytes: sampleMemoryUsage(),
       cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+      estimatedRemainingMs: estimateRemaining(attempts, totalSpace, speed),
       status: "running",
       reason: "Explorando el espacio de contraseñas para AES.",
       currentCandidate: candidate,
-    });
+    };
+    onUpdate(snap);
 
-    if (attempts >= options.maxAttempts || elapsedMs >= options.maxDurationMs) {
-      break;
+    // AES-GCM authentication tag validates correctness — if decryption succeeded
+    // and (optionally) the plaintext matches, the key is found.
+    if (decrypted !== null && (knownPlaintext === null || decrypted === knownPlaintext)) {
+      return {
+        ...snap,
+        elapsedMs: performance.now() - started,
+        progress: 100,
+        status: "succeeded",
+        reason: "Clave AES recuperada con éxito.",
+        estimatedRemainingMs: 0,
+        found: true,
+        foundCandidate: candidate,
+      };
     }
-    if (attempts % 5 === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const stop = checkStop(attempts, elapsedMs, options, lastProgressMs);
+    if (stop.stopped) {
+      return { ...snap, status: "failed", reason: reasonLabel(stop.reason), found: false };
     }
+
+    // AES-PBKDF2 is expensive; breathe every 5 iterations
+    await breathe(attempts, 5);
   }
 
   const elapsedMs = performance.now() - started;
+  const speed = attempts / Math.max(1, elapsedMs / 1000);
   return {
     elapsedMs,
     attempts,
-    speedPerSecond: attempts / Math.max(1, elapsedMs / 1000),
+    speedPerSecond: speed,
     progress: formatProgress(attempts, totalSpace),
     searchSize: totalSpace,
     memoryBytes: sampleMemoryUsage(),
     cpuUtilization: calculateCpuUtilization(elapsedMs, busyMs),
+    estimatedRemainingMs: 0,
     status: "failed",
     reason: "El ataque de fuerza bruta a AES no encontró la clave dentro del presupuesto de cómputo.",
     found: false,
