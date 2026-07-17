@@ -256,13 +256,13 @@ export default function AlgoritmosPage() {
         groups[b].count++;
       });
       return Object.values(groups)
-        .map(g => ({
+        .map((g: any) => ({
           name: g.bytes < 1024 ? `${g.bytes} B` : `${(g.bytes / 1024).toFixed(0)} KB`,
           bytes: g.bytes,
           time: g.totalTime / g.count,
           throughput: g.bytes / (g.totalTime / g.count)
         }))
-        .sort((a, b) => a.bytes - b.bytes);
+        .sort((a: any, b: any) => a.bytes - b.bytes);
     }
     return [];
   }, [activeTab, activeRawKey]);
@@ -445,8 +445,8 @@ export default function AlgoritmosPage() {
     // Búsqueda
     if (searchTerm.trim() !== "") {
       const term = searchTerm.toLowerCase();
-      processed = processed.filter(row =>
-        Object.values(row).some(val =>
+      processed = processed.filter((row: any) =>
+        Object.values(row).some((val: any) =>
           String(val).toLowerCase().includes(term)
         )
       );
@@ -454,7 +454,7 @@ export default function AlgoritmosPage() {
 
     // Ordenamiento
     if (sortConfig) {
-      processed.sort((a, b) => {
+      processed.sort((a: any, b: any) => {
         const valA = a[sortConfig.key];
         const valB = b[sortConfig.key];
         

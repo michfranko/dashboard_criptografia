@@ -53,9 +53,9 @@ async function discoverDriveFiles(folderUrl: string) {
     const matches = Array.from(new Set(html.matchAll(/\/file\/d\/([^/]+)/g)));
 
     const files = matches
-      .map((match) => match[1])
+      .map((match: any) => match[1])
       .filter(Boolean)
-      .map((fileId) => ({
+      .map((fileId: any) => ({
         name: `Archivo ${fileId.slice(0, 8)}`,
         path: `https://drive.google.com/uc?export=download&id=${fileId}`,
       }))
@@ -72,8 +72,8 @@ async function discoverDriveFiles(folderUrl: string) {
       if (apiResponse.ok) {
         const apiPayload = (await apiResponse.json()) as { files?: Array<{ id: string; name: string }> };
         const apiFiles = (apiPayload.files ?? [])
-          .filter((file) => file.id)
-          .map((file) => ({
+          .filter((file: any) => file.id)
+          .map((file: any) => ({
             name: file.name,
             path: `https://drive.google.com/uc?export=download&id=${file.id}`,
           }));

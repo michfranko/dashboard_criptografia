@@ -195,19 +195,19 @@ export default function ProbabilidadPage() {
 
   const filteredFiles = useMemo(() => {
     return rawFilesList
-      .filter((file) =>
+      .filter((file: any) =>
         file.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         file.path.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a: any, b: any) => {
-        const valA = a[sortField];
-        const valB = b[sortField];
+        const valA = (a as any)[sortField];
+        const valB = (b as any)[sortField];
         if (typeof valA === "string") {
           return sortOrder === "asc"
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA);
         }
-        return sortOrder === "asc" ? valA - valB : valB - valA;
+        return sortOrder === "asc" ? (valA as number) - (valB as number) : (valB as number) - (valA as number);
       });
   }, [rawFilesList, searchTerm, sortField, sortOrder]);
 
@@ -231,7 +231,7 @@ export default function ProbabilidadPage() {
   const exportToCSV = () => {
     const headers = ["ID,Nombre,Ruta,Filas,Columnas,Duplicados,Memoria(Bytes)"];
     const rows = filteredFiles.map(
-      (f) => `${f.id},"${f.name}","${f.path}",${f.rows},${f.columnsCount},${f.duplicates},${f.memory}`
+      (f: any) => `${f.id},"${f.name}","${f.path}",${f.rows},${f.columnsCount},${f.duplicates},${f.memory}`
     );
     const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -571,7 +571,7 @@ export default function ProbabilidadPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedFiles.map((file) => (
+              {paginatedFiles.map((file: any) => (
                 <tr key={file.id} className="border-b border-white/5 hover:bg-slate-900/40 text-slate-300">
                   <td className="p-3 font-mono">{file.id}</td>
                   <td className="p-3 font-medium text-white">{file.name}</td>
