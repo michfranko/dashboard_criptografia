@@ -927,8 +927,12 @@ export default function SimulacionPage() {
                           )}
                           <button
                             onClick={executeDecrypt}
-                            disabled={loading}
-                            className="rounded-xl bg-slate-800 px-6 py-2 text-sm font-bold text-white"
+                            disabled={
+                              loading || 
+                              (algorithm === "rsa" && !rsaPrivateKey) || 
+                              (algorithm === "aes" && !decryptPassword)
+                            }
+                            className="rounded-xl bg-slate-800 px-6 py-2 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             DESCIFRAR
                           </button>
@@ -942,7 +946,7 @@ export default function SimulacionPage() {
               </>
             ) : (
               <div className="flex h-full min-h-[400px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-white/5 bg-slate-950/20 text-center p-10">
-                <p className="text-slate-500">Configura los parámetros y presiona "Procesar".</p>
+                <p className="text-slate-500">Configura los parámetros y presiona (Procesar).</p>
               </div>
             )}
           </main>

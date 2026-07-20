@@ -142,10 +142,10 @@ function md5(data: Uint8Array) {
   return output;
 }
 
-export async function deriveAesKey(password: string, salt: Uint8Array, usage: KeyUsage) {
+export async function deriveAesKey(password: string, salt: Uint8Array, usage: KeyUsage, customIterations?: number) {
   const material = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]);
   return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: salt as BufferSource, iterations: AES_ITERATIONS, hash: "SHA-256" },
+    { name: "PBKDF2", salt: salt as BufferSource, iterations: customIterations ?? AES_ITERATIONS, hash: "SHA-256" },
     material,
     { name: "AES-GCM", length: 256 },
     false,
@@ -217,7 +217,7 @@ export async function encryptAes(plaintext: string, password: string): Promise<{
 
 export async function decryptAes(envelope: string, password: string) {
   const parsed = parseAesEnvelope(envelope);
-  const key = await deriveAesKey(password, parsed.salt, "decrypt");
+  const key = await deriveAesKey(password, parsed.salt, "decrypt", parsed.iterations);
   const decrypted = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: parsed.iv as BufferSource, additionalData: AES_ADDITIONAL_DATA as BufferSource, tagLength: 128 },
     key,
