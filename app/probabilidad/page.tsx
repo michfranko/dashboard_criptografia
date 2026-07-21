@@ -106,19 +106,23 @@ export default function ProbabilidadPage() {
       numericStats,
       recordsCount: distributions?.summary?.total_records ?? 0,
       filesCount: distributions?.summary?.total_files ?? 0,
-      attackTimeMean: getMean("execution_time_attack"),
-      attackTimeStd: getStd("execution_time_attack"),
+      
+      attackTimeMean: getMean("attack_time_seconds"), 
+      attackTimeStd: getStd("attack_time_seconds"),
       attemptsMean: getMean("attempts"),
       attemptsStd: getStd("attempts"),
       searchSpaceMean: getMean("search_space"),
-      log2Mean: getMean("log2_search_space"),
-      maxAttackTime: numericStats["execution_time_attack"]?.max ?? null,
+
+      log2Mean: getMean("key_size_bits"),
+
+      //log2Mean: getMean("log2_search_space"),
+      maxAttackTime: numericStats["attack_time_seconds"]?.max ?? null,
       quality: primaryFile?.quality ?? null,
     };
   }, []);
 
   const distributionData = useMemo(() => {
-    const stats = evidence.numericStats["execution_time_attack"];
+    const stats = evidence.numericStats["attack_time_seconds"]; 
     if (!stats) return [];
     return [
       { name: "Mínimo", valor: stats.min, densidad: 5 },
@@ -157,20 +161,19 @@ export default function ProbabilidadPage() {
   }, [evidence]);
 
   const confidenceIntervalsData = useMemo(() => {
-    if (evidence.confidenceIntervals?.data) {
-      return evidence.confidenceIntervals.data;
-    }
     const mean = evidence.attackTimeMean ?? 0;
     const std = evidence.attackTimeStd ?? 0;
-    const n = evidence.recordsCount ?? 1;
+    const n = evidence.recordsCount ?? 1; 
+    
     const margin = 1.96 * (std / Math.sqrt(n));
+    
     return [
       {
-        parametro: "Tiempo Medio de Ataque (execution_time_attack)",
+        parametro: "Tiempo Medio de Ataque (attack_time_seconds)",
         confianza: "95%",
-        inferior: Math.max(0, mean - margin),
-        superior: mean + margin,
-        metodo: "Distribución t-Student / Normal",
+        inferior: Math.max(0, mean - margin), 
+        superior: mean + margin,             
+        metodo: "Distribución Normal / Fórmula de Wald",
       },
     ];
   }, [evidence]);
@@ -326,39 +329,39 @@ export default function ProbabilidadPage() {
           <h3 className="text-lg font-semibold text-white mb-4">Indicadores Estadísticos Clave</h3>
           <div className="grid gap-4 md:grid-cols-4">
             <MetricCard
-              label="Media (execution_time_attack)"
-              value={evidence.attackTimeMean ? `${formatMetric(evidence.attackTimeMean, 4)} s` : "—"}
-              detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.mean"
+              label="Media (attack_time_seconds)"
+              value={evidence.attackTimeMean !== null ? `${formatMetric(evidence.attackTimeMean, 4)} s` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.attack_time_seconds.mean"
               accent="text-fuchsia-300"
             />
             <MetricCard
               label="Desviación Estándar"
-              value={evidence.attackTimeStd ? `${formatMetric(evidence.attackTimeStd, 4)} s` : "—"}
-              detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.std"
+              value={evidence.attackTimeStd !== null ? `${formatMetric(evidence.attackTimeStd, 4)} s` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.attack_time_seconds.std"
               accent="text-rose-300"
             />
             <MetricCard
               label="Media de Intentos"
-              value={evidence.attemptsMean ? formatScientific(evidence.attemptsMean) : "—"}
+              value={evidence.attemptsMean !== null ? formatScientific(evidence.attemptsMean) : "—"}
               detail="Ruta: distributions.data[0].summary.numeric_stats.attempts.mean"
               accent="text-cyan-300"
             />
             <MetricCard
               label="Espacio de Búsqueda Medio"
-              value={evidence.searchSpaceMean ? formatScientific(evidence.searchSpaceMean) : "—"}
+              value={evidence.searchSpaceMean !== null ? formatScientific(evidence.searchSpaceMean) : "—"}
               detail="Ruta: distributions.data[0].summary.numeric_stats.search_space.mean"
               accent="text-emerald-300"
             />
             <MetricCard
-              label="Mediana (log2 space)"
-              value={evidence.numericStats["log2_search_space"]?.["50%"] ? `${formatMetric(evidence.numericStats["log2_search_space"]?.["50%"], 2)} bits` : "—"}
-              detail="Ruta: distributions.data[0].summary.numeric_stats.log2_search_space.50%"
+              label="Mediana (key_size_bits)"
+              value={evidence.numericStats["key_size_bits"]?.["50%"] !== undefined ? `${formatMetric(evidence.numericStats["key_size_bits"]["50%"], 2)} bits` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.key_size_bits.50%"
               accent="text-amber-300"
             />
             <MetricCard
               label="Tiempo Máximo de Ruptura"
-              value={evidence.maxAttackTime ? `${formatMetric(evidence.maxAttackTime, 4)} s` : "—"}
-              detail="Ruta: distributions.data[0].summary.numeric_stats.execution_time_attack.max"
+              value={evidence.maxAttackTime !== null ? `${formatMetric(evidence.maxAttackTime, 4)} s` : "—"}
+              detail="Ruta: distributions.data[0].summary.numeric_stats.attack_time_seconds.max"
               accent="text-violet-300"
             />
             <MetricCard
@@ -370,7 +373,7 @@ export default function ProbabilidadPage() {
             <MetricCard
               label="Límite Superior Confianza"
               value={confidenceIntervalsData[0]?.superior ? `${formatMetric(confidenceIntervalsData[0].superior, 4)} s` : "—"}
-              detail="Ruta: confidence_intervals.data[0].superior"
+              detail="Cálculo dinámico: Media + (1.96 * (Std / √N))"
               accent="text-indigo-300"
             />
           </div>
