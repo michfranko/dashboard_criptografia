@@ -5,12 +5,9 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Cell,
   Legend,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -27,18 +24,25 @@ import {
   encryptAes,
   encryptRsa,
   generateRsaKeyPair,
+  generateDemoRsaKeyPair,
+  encryptDemoRsa,
+  decryptDemoRsa,
   hashText,
+  parseAesEnvelope,
 } from "./crypto-systems";
 import {
-  AttackOptions,
   AttackResult,
   AttackSnapshot,
-  AttackStrategy,
+  AttackStatus,
   attackAes,
-  attackHash,
+  attackMd5,
+  attackSha256,
   attackRsa,
-} from "./attack-simulations";
+  checkAttackFeasibility,
+  FeasibilityCheck,
+} from "./attack-engine";
 import { SimulationRecord, SimulationStorage, DASHBOARD_VERSION, SIMULATOR_VERSION } from "./simulation-storage";
+import { SessionManager, SimulationSession, AttackStrategy } from "./simulation-session";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,7 +54,7 @@ type SortDir = "asc" | "desc";
 
 const algorithms = [
   { value: "aes" as const, label: "AES-256-GCM", description: "Cifrado simétrico autenticado con clave secreta." },
-  { value: "rsa" as const, label: "RSA-OAEP 2048", description: "Cifrado asimétrico para mensajes breves." },
+  { value: "rsa" as const, label: "RSA-OAEP / Demostración", description: "Cifrado asimétrico en modo demo o real." },
   { value: "md5" as const, label: "MD5", description: "Hash irreversible de 128 bits." },
   { value: "sha256" as const, label: "SHA-256", description: "Hash irreversible de 256 bits." },
 ];
@@ -73,11 +77,11 @@ const ALGO_TECH_INFO: Record<Algorithm, {
   },
   rsa: {
     type: "Asimétrico (Clave pública)",
-    keyLength: "2048 bits",
-    blockSize: "Variable (Máx 190 bytes con OAEP)",
-    mode: "OAEP (SHA-256)",
-    complexity: "Basada en factorización (GNFS)",
-    securityLevel: "Alto (Estándar corporativo)",
+    keyLength: "32, 64, 128 (Demo) / 2048 (Real)",
+    blockSize: "Variable",
+    mode: "OAEP / Modular Directo",
+    complexity: "Basada en factorización (División de prueba / GNFS)",
+    securityLevel: "Demostración o Alto (2048-bit)",
   },
   md5: {
     type: "Hash (Digest)",
@@ -100,6 +104,7 @@ const ALGO_TECH_INFO: Record<Algorithm, {
 const attackStrategies: { value: AttackStrategy; label: string; description: string }[] = [
   { value: "dictionary", label: "Diccionario", description: "Busca coincidencias en una lista de valores comunes." },
   { value: "bruteforce", label: "Fuerza bruta", description: "Prueba todas las combinaciones posibles en el espacio definido." },
+  { value: "dictionary-bruteforce", label: "Diccionario + Fuerza bruta", description: "Primero diccionario, luego fuerza bruta." },
   { value: "trial-division", label: "Factorización", description: "Ataca el módulo RSA con divisores primos de prueba." },
 ];
 
@@ -108,11 +113,11 @@ const defaultCharset = [
   "q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9",
 ];
 
-const ALGO_DEFAULTS: Record<Algorithm, { maxAttempts: number; maxDurationMs: number }> = {
-  aes:    { maxAttempts: 50_000,     maxDurationMs: 300_000 },  // 5 min
-  rsa:    { maxAttempts: 500_000,    maxDurationMs: 600_000 },  // 10 min
-  md5:    { maxAttempts: 1_000_000,  maxDurationMs: 180_000 },  // 3 min
-  sha256: { maxAttempts: 1_000_000,  maxDurationMs: 180_000 },  // 3 min
+const ALGO_DEFAULTS: Record<Algorithm, { maxAttempts: number; maxDurationMs: number; estimatedSpeed: number }> = {
+  aes:    { maxAttempts: 50_000,     maxDurationMs: 300_000, estimatedSpeed: 50 },    // AES-PBKDF2 is slow
+  rsa:    { maxAttempts: 500_000,    maxDurationMs: 600_000, estimatedSpeed: 1000 },  // RSA BigInt ops
+  md5:    { maxAttempts: 1_000_000,  maxDurationMs: 180_000, estimatedSpeed: 5000 },  // MD5 is fast
+  sha256: { maxAttempts: 1_000_000,  maxDurationMs: 180_000, estimatedSpeed: 2000 },  // SHA-256 moderate
 };
 
 const ITEMS_PER_PAGE = 25;
@@ -127,21 +132,6 @@ function formatDurationMs(ms: number): string {
   return `${(ms / 3_600_000).toFixed(2)} h`;
 }
 
-function formatSearchSize(value: number | bigint): string {
-  if (typeof value === "bigint") {
-    const k = BigInt(1_000), m = BigInt(1_000_000), g = BigInt(1_000_000_000);
-    if (value < k) return `${value} elementos`;
-    if (value < m) return `${Number(value / k).toLocaleString("es-EC")} mil`;
-    if (value < g) return `${Number(value / m).toLocaleString("es-EC")} M`;
-    return `${Number(value / g).toLocaleString("es-EC")} G`;
-  }
-  return value.toLocaleString("es-EC");
-}
-
-function algorithmLabelOf(alg: Algorithm): string {
-  return algorithms.find((a) => a.value === alg)?.label ?? alg.toUpperCase();
-}
-
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
   const k = 1024;
@@ -150,11 +140,9 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
-// ─── Icons (SVG) ─────────────────────────────────────────────────────────────
-
-const IconZap = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-);
+function algorithmLabelOf(alg: Algorithm): string {
+  return algorithms.find((a) => a.value === alg)?.label ?? alg.toUpperCase();
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -167,19 +155,18 @@ export default function SimulacionPage() {
   const [input, setInput] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [rsaBits, setRsaBits] = useState<32 | 64 | 128 | 2048>(64);
   const [result, setResult] = useState<CryptoOperationResult | null>(null);
-  const [rsaPrivateKey, setRsaPrivateKey] = useState<CryptoKey | null>(null);
-  const [rsaPublicJwk, setRsaPublicJwk] = useState<JsonWebKey | null>(null);
   const [decryptedText, setDecryptedText] = useState<string | null>(null);
   const [decryptPassword, setDecryptPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [decryptError, setDecryptError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   // ── Attack tab ────────────────────────────────────────────────────────────
   const [attackStrategy, setAttackStrategy] = useState<AttackStrategy>("dictionary");
-  const [attackValue, setAttackValue] = useState("");
+  const [attackCharset, setAttackCharset] = useState(defaultCharset.join(""));
+  const [attackMaxLength, setAttackMaxLength] = useState(8);
   const [customMaxAttempts, setCustomMaxAttempts] = useState(ALGO_DEFAULTS.aes.maxAttempts);
   const [customMaxDurationMs, setCustomMaxDurationMs] = useState(ALGO_DEFAULTS.aes.maxDurationMs);
   const [attackSnapshot, setAttackSnapshot] = useState<AttackSnapshot | null>(null);
@@ -187,6 +174,7 @@ export default function SimulacionPage() {
   const [attackResult, setAttackResult] = useState<AttackResult | null>(null);
   const [attackError, setAttackError] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [feasibility, setFeasibility] = useState<FeasibilityCheck | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // ── History tab ───────────────────────────────────────────────────────────
@@ -205,7 +193,6 @@ export default function SimulacionPage() {
   const [sortField, setSortField] = useState<SortField>("timestamp");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const inputBytes = useMemo(() => new TextEncoder().encode(input).length, [input]);
 
@@ -217,13 +204,10 @@ export default function SimulacionPage() {
 
   const resetCrypto = useCallback(() => {
     setResult(null);
-    setRsaPrivateKey(null);
-    setRsaPublicJwk(null);
     setDecryptPassword("");
     setDecryptedText(null);
     setError(null);
     setDecryptError(null);
-    setCopied(false);
   }, []);
 
   const resetAttack = useCallback(() => {
@@ -232,6 +216,11 @@ export default function SimulacionPage() {
     setAttackResult(null);
     setAttackError(null);
     setShowSummary(false);
+    setFeasibility(null);
+  }, []);
+
+  const switchToAttack = useCallback(() => {
+    setMode("attack");
   }, []);
 
   const changeAlgorithm = useCallback(
@@ -326,17 +315,6 @@ export default function SimulacionPage() {
     }));
   }, [attackTimeline]);
 
-  const spaceExplorationData = useMemo(() => {
-    if (!attackSnapshot) return [];
-    const explored = attackSnapshot.attempts;
-    const total = typeof attackSnapshot.searchSize === "bigint" ? Number(attackSnapshot.searchSize) : attackSnapshot.searchSize;
-    const remaining = Math.max(0, total - explored);
-    return [
-      { name: "Explorado", value: explored, color: "#22d3ee" },
-      { name: "Restante", value: remaining, color: "#1e293b" },
-    ];
-  }, [attackSnapshot]);
-
   // ────────────────────────────────────────────────────────────────────────────
   // Handlers
   // ────────────────────────────────────────────────────────────────────────────
@@ -364,36 +342,70 @@ export default function SimulacionPage() {
       const started = performance.now();
       let opResult: CryptoOperationResult | null = null;
       let ciphertext = "";
+      let aesSalt = "";
+      let aesIv = "";
+      let aesIterations = 0;
+      let rsaPublicJwk: (JsonWebKey & { keyBits?: number }) | undefined;
+      let rsaPrivateKey: CryptoKey | undefined;
+      let rsaDemoPair: import("./crypto-systems").DemoRsaKeyPair | undefined;
 
       if (algorithm === "aes") {
         const { result: operation, envelope } = await encryptAes(input, password);
         ciphertext = envelope;
         opResult = { ...operation, durationMs: performance.now() - started };
+        try {
+          const parsed = parseAesEnvelope(envelope);
+          aesSalt = btoa(String.fromCodePoint(...parsed.salt));
+          aesIv = btoa(String.fromCodePoint(...parsed.iv));
+          aesIterations = parsed.iterations;
+        } catch { /* ignore */ }
       } else if (algorithm === "rsa") {
-        if (inputBytes > 190) {
-          setError("RSA-OAEP 2048 admite hasta 190 bytes. Usa AES para textos más largos.");
-          setLoading(false);
-          return;
+        if (rsaBits <= 128) {
+          const { demoPair, publicJwk } = generateDemoRsaKeyPair(rsaBits as 32 | 64 | 128);
+          const encrypted = encryptDemoRsa(input, demoPair.n, demoPair.e);
+          ciphertext = encrypted.ciphertext;
+          rsaPublicJwk = publicJwk;
+          rsaDemoPair = demoPair;
+          opResult = {
+            algorithm: "rsa",
+            algorithmLabel: `RSA ${rsaBits} bits (Demostración)`,
+            output: encrypted.ciphertext,
+            inputBytes,
+            outputBytes: encrypted.outputBytes,
+            expansion: encrypted.outputBytes - inputBytes,
+            durationMs: performance.now() - started,
+            reversible: true,
+            theoreticalComplexity: `División de prueba ~2^${Math.floor(rsaBits / 2)}`,
+            details: [`Clave RSA de ${rsaBits} bits`, "Modo Demostración factorizable"],
+            metadata: { modulusBits: rsaBits },
+          };
+        } else {
+          if (inputBytes > 190) {
+            setError("RSA-OAEP 2048 admite hasta 190 bytes. Usa AES para textos más largos.");
+            setLoading(false);
+            return;
+          }
+          const { pair } = await generateRsaKeyPair();
+          const encrypted = await encryptRsa(input, pair.publicKey);
+          ciphertext = encrypted.ciphertext;
+          rsaPrivateKey = pair.privateKey;
+          const pubJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+          rsaPublicJwk = { ...pubJwk, keyBits: 2048 };
+          SessionManager.rsaPrivateKey = pair.privateKey;
+          opResult = {
+            algorithm: "rsa",
+            algorithmLabel: "RSA-OAEP 2048 (Modo Real)",
+            output: encrypted.ciphertext,
+            inputBytes,
+            outputBytes: encrypted.outputBytes,
+            expansion: encrypted.outputBytes - inputBytes,
+            durationMs: performance.now() - started,
+            reversible: true,
+            theoreticalComplexity: "Basada en factorización de 2048 bits",
+            details: ["Clave RSA 2048", "OAEP con SHA-256"],
+            metadata: { modulusBits: 2048 },
+          };
         }
-        const { pair } = await generateRsaKeyPair();
-        const encrypted = await encryptRsa(input, pair.publicKey);
-        ciphertext = encrypted.ciphertext;
-        setRsaPrivateKey(pair.privateKey);
-        const pubJwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
-        setRsaPublicJwk(pubJwk);
-        opResult = {
-          algorithm: "rsa",
-          algorithmLabel: "RSA-OAEP 2048",
-          output: encrypted.ciphertext,
-          inputBytes,
-          outputBytes: encrypted.outputBytes,
-          expansion: encrypted.outputBytes - inputBytes,
-          durationMs: performance.now() - started,
-          reversible: true,
-          theoreticalComplexity: "Basada en factorización de 2048 bits",
-          details: ["Clave RSA 2048", "OAEP con SHA-256"],
-          metadata: { modulusBits: 2048 },
-        };
       } else {
         const digest = await hashText(algorithm, input);
         ciphertext = digest;
@@ -415,14 +427,50 @@ export default function SimulacionPage() {
 
       if (opResult) {
         setResult(opResult);
-        const keyBits = algorithm === "aes" ? 256 : algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256;
-        const searchSpace = algorithm === "aes" ? (BigInt(2) ** BigInt(256)).toString() : algorithm === "rsa" ? (BigInt(2) ** BigInt(2048)).toString() : algorithm === "md5" ? (BigInt(2) ** BigInt(128)).toString() : (BigInt(2) ** BigInt(256)).toString();
+
+        // ── Create simulation session ──────────────────────────────────────
+        const sessionData: Omit<SimulationSession, "id" | "createdAt"> = {
+          algorithm,
+          algorithmLabel: opResult.algorithmLabel,
+          originalText: input,
+          originalTextBytes: inputBytes,
+          ciphertext,
+          ciphertextBytes: opResult.outputBytes,
+          ciphertextFormat: algorithm === "aes" ? "Envelope" : algorithm === "rsa" ? "Base64" : "Hex",
+          encryptionDurationMs: opResult.durationMs,
+        };
+
+        if (algorithm === "aes") {
+          sessionData.aesPassword = password;
+          sessionData.aesSalt = aesSalt;
+          sessionData.aesIv = aesIv;
+          sessionData.aesIterations = aesIterations;
+        } else if (algorithm === "rsa") {
+          sessionData.rsaPublicJwk = rsaPublicJwk;
+          sessionData.rsaKeyBits = rsaBits;
+          if (rsaDemoPair) {
+            sessionData.rsaDemoPrivateKey = {
+              p: rsaDemoPair.p.toString(),
+              q: rsaDemoPair.q.toString(),
+              n: rsaDemoPair.n.toString(),
+              e: rsaDemoPair.e.toString(),
+              d: rsaDemoPair.d.toString(),
+              keyBits: rsaDemoPair.keyBits,
+            };
+          }
+        }
+
+        SessionManager.create(sessionData);
+
+        // ── Save to history ────────────────────────────────────────────────
+        const keyBits = algorithm === "aes" ? 256 : algorithm === "rsa" ? rsaBits : algorithm === "md5" ? 128 : 256;
+        const searchSpace = algorithm === "aes" ? (BigInt(2) ** BigInt(256)).toString() : algorithm === "rsa" ? (BigInt(2) ** BigInt(rsaBits)).toString() : algorithm === "md5" ? (BigInt(2) ** BigInt(128)).toString() : (BigInt(2) ** BigInt(256)).toString();
 
         SimulationStorage.save({
           versionDashboard: DASHBOARD_VERSION,
           versionSimulador: SIMULATOR_VERSION,
           algorithm: opResult.algorithmLabel,
-          algorithmKey: algorithm === "aes" ? "aes" : algorithm === "rsa" ? "rsa" : algorithm === "md5" ? "md5" : "sha256",
+          algorithmKey: algorithm,
           operation: "encryption",
           keyLengthBits: keyBits,
           blockSize: algorithm === "aes" ? 16 : 0,
@@ -470,7 +518,6 @@ export default function SimulacionPage() {
           resultStatus: "Éxito",
           errorMessage: "",
           notes: opResult.details.join("; "),
-          // Legacy
           originalText: input,
           messageSize: inputBytes,
           ciphertextSize: opResult.outputBytes,
@@ -481,7 +528,7 @@ export default function SimulacionPage() {
           cpuUtilization: 0,
           status: "success",
           searchSpace,
-          log2SearchSpace: algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256,
+          log2SearchSpace: algorithm === "rsa" ? rsaBits : algorithm === "md5" ? 128 : 256,
           successProbability: "1.0",
         });
         refreshHistory();
@@ -505,8 +552,15 @@ export default function SimulacionPage() {
       if (algorithm === "aes") {
         if (!decryptPassword) throw new Error("Contraseña requerida.");
         plaintext = await decryptAes(result.output, decryptPassword);
-      } else if (algorithm === "rsa" && rsaPrivateKey) {
-        plaintext = await decryptRsa(result.output, rsaPrivateKey);
+      } else if (algorithm === "rsa") {
+        if (rsaBits <= 128 && (SessionManager as any).rsaDemoKeyPair) {
+          const pair = (SessionManager as any).rsaDemoKeyPair;
+          plaintext = decryptDemoRsa(result.output, pair.n, pair.d);
+        } else if (SessionManager.rsaPrivateKey) {
+          plaintext = await decryptRsa(result.output, SessionManager.rsaPrivateKey);
+        } else {
+          throw new Error("No hay clave privada disponible.");
+        }
       }
       setDecryptedText(plaintext);
       const elapsed = performance.now() - started;
@@ -514,7 +568,7 @@ export default function SimulacionPage() {
         versionDashboard: DASHBOARD_VERSION,
         versionSimulador: SIMULATOR_VERSION,
         algorithm: algorithmLabelOf(algorithm),
-        algorithmKey: algorithm === "aes" ? "aes" : algorithm === "rsa" ? "rsa" : algorithm === "md5" ? "md5" : "sha256",
+        algorithmKey: algorithm,
         operation: "decryption",
         keyLengthBits: algorithm === "rsa" ? 2048 : 256,
         blockSize: algorithm === "aes" ? 16 : 0,
@@ -562,7 +616,6 @@ export default function SimulacionPage() {
         resultStatus: "Éxito",
         errorMessage: "",
         notes: "",
-        // Legacy
         originalText: "Descifrado",
         messageSize: plaintext.length,
         ciphertextSize: result.outputBytes,
@@ -579,11 +632,12 @@ export default function SimulacionPage() {
       refreshHistory();
     } catch {
       setDecryptError("Clave incorrecta.");
+      const elapsed = performance.now() - started;
       SimulationStorage.save({
         versionDashboard: DASHBOARD_VERSION,
         versionSimulador: SIMULATOR_VERSION,
         algorithm: algorithmLabelOf(algorithm),
-        algorithmKey: algorithm === "aes" ? "aes" : algorithm === "rsa" ? "rsa" : algorithm === "md5" ? "md5" : "sha256",
+        algorithmKey: algorithm,
         operation: "decryption",
         keyLengthBits: algorithm === "rsa" ? 2048 : 256,
         blockSize: algorithm === "aes" ? 16 : 0,
@@ -603,15 +657,15 @@ export default function SimulacionPage() {
         expansionRatio: 0,
         compressionRatio: 0,
         integrityVerified: false,
-        executionTimeMs: performance.now() - started,
-        executionTimeSeconds: (performance.now() - started) / 1000,
+        executionTimeMs: elapsed,
+        executionTimeSeconds: elapsed / 1000,
         throughputBytesSec: 0,
         cpuUsagePercent: 0,
         averageCpuUsage: 0,
         peakCpuUsage: 0,
         memoryUsageMb: 0,
         peakMemoryUsageMb: 0,
-        latencyMs: performance.now() - started,
+        latencyMs: elapsed,
         attackStarted: "",
         attackFinished: "",
         attackDurationSeconds: 0,
@@ -631,7 +685,6 @@ export default function SimulacionPage() {
         resultStatus: "Fallo",
         errorMessage: "Clave incorrecta",
         notes: "",
-        // Legacy
         originalText: "Fallo descifrado",
         messageSize: 0,
         ciphertextSize: result.outputBytes,
@@ -651,17 +704,57 @@ export default function SimulacionPage() {
     }
   };
 
+  // ── Feasibility check ─────────────────────────────────────────────────────
+
+  const runFeasibilityCheck = useCallback(() => {
+    const session = SessionManager.get();
+    if (!session) {
+      setFeasibility(null);
+      return;
+    }
+
+    const charset = attackCharset.length > 0 ? attackCharset.split("") : defaultCharset;
+    const maxLength = attackMaxLength;
+    const defaults = ALGO_DEFAULTS[algorithm];
+
+    const check = checkAttackFeasibility(
+      algorithm,
+      attackStrategy,
+      charset,
+      maxLength,
+      customMaxAttempts,
+      customMaxDurationMs,
+      defaults.estimatedSpeed,
+      session,
+    );
+    setFeasibility(check);
+  }, [algorithm, attackStrategy, attackCharset, attackMaxLength, customMaxAttempts, customMaxDurationMs]);
+
+  // Re-run feasibility when parameters change
+  useEffect(() => {
+    if (mode === "attack") {
+      runFeasibilityCheck();
+    }
+  }, [mode, runFeasibilityCheck]);
+
+  // ── Start attack ──────────────────────────────────────────────────────────
+
   const startAttack = async () => {
-    if (!attackValue) {
-      setAttackError("Ingresa un valor para la simulación.");
+    const session = SessionManager.get();
+    if (!session) {
+      setAttackError("No hay una sesión activa. Genera primero un cifrado en la sección de Cifrado y Hashing.");
       return;
     }
-    if (algorithm === "aes" && (!result || result.algorithmLabel !== "AES-256-GCM")) {
-      setAttackError("Genera primero el paquete AES.");
+    if (session.algorithm !== algorithm) {
+      setAttackError(`La sesión activa es para ${session.algorithmLabel}. Cambia el algoritmo o genera un nuevo cifrado.`);
       return;
     }
-    if (algorithm === "rsa" && !rsaPublicJwk) {
-      setAttackError("Genera primero la clave RSA.");
+    if (algorithm === "aes" && !session.aesPassword) {
+      setAttackError("La sesión AES no contiene la contraseña. Genera un nuevo cifrado.");
+      return;
+    }
+    if (algorithm === "rsa" && !session.rsaPublicJwk) {
+      setAttackError("La sesión RSA no contiene la clave pública. Genera un nuevo cifrado.");
       return;
     }
 
@@ -673,49 +766,93 @@ export default function SimulacionPage() {
     abortControllerRef.current = controller;
     const startIso = new Date().toISOString();
 
-    const options: AttackOptions = {
-      strategy: attackStrategy,
-      maxAttempts: customMaxAttempts,
-      maxDurationMs: customMaxDurationMs,
-      charset: (algorithm === "md5" || algorithm === "sha256") ? Array.from(new Set([...attackValue])).concat(defaultCharset).slice(0, 36) : defaultCharset,
-      maxCandidateLength: algorithm === "aes" ? Math.min(6, attackValue.length || 6) : 5,
-      abortSignal: controller.signal,
-      stallTimeoutMs: 15_000,
-    };
+    const charset = attackCharset.length > 0 ? attackCharset.split("") : defaultCharset;
+    const dictionary: string[] = [];
 
     try {
       let attack: AttackResult;
-      if (algorithm === "aes") {
-        attack = await attackAes(result!.output, input, options, attackUpdate);
-      } else if (algorithm === "rsa") {
-        attack = await attackRsa(rsaPublicJwk!, options, attackUpdate);
-      } else {
-        attack = await attackHash(algorithm, attackValue, attackStrategy, options, attackUpdate);
+
+      switch (algorithm) {
+        case "aes":
+          attack = await attackAes(
+            session,
+            attackStrategy,
+            customMaxAttempts,
+            customMaxDurationMs,
+            charset,
+            attackMaxLength,
+            dictionary,
+            controller.signal,
+            attackUpdate,
+          );
+          break;
+
+        case "md5":
+          attack = await attackMd5(
+            session,
+            attackStrategy,
+            customMaxAttempts,
+            customMaxDurationMs,
+            charset,
+            attackMaxLength,
+            dictionary,
+            controller.signal,
+            attackUpdate,
+          );
+          break;
+
+        case "sha256":
+          attack = await attackSha256(
+            session,
+            attackStrategy,
+            customMaxAttempts,
+            customMaxDurationMs,
+            charset,
+            attackMaxLength,
+            dictionary,
+            controller.signal,
+            attackUpdate,
+          );
+          break;
+
+        case "rsa":
+          attack = await attackRsa(
+            session,
+            customMaxAttempts,
+            customMaxDurationMs,
+            controller.signal,
+            attackUpdate,
+          );
+          break;
+
+        default:
+          throw new Error("Algoritmo no soportado.");
       }
 
       setAttackResult(attack);
       setShowSummary(true);
 
-      const ciphertextForRecord = algorithm === "aes" ? result?.output ?? "" : (algorithm === "rsa" ? "" : await hashText(algorithm, attackValue));
+      // ── Save attack to history ──────────────────────────────────────────
+      const keyBits = algorithm === "aes" ? 256 : algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256;
 
       SimulationStorage.save({
         versionDashboard: DASHBOARD_VERSION,
         versionSimulador: SIMULATOR_VERSION,
         algorithm: algorithmLabelOf(algorithm),
-        algorithmKey: algorithm === "aes" ? "aes" : algorithm === "rsa" ? "rsa" : algorithm === "md5" ? "md5" : "sha256",
+        algorithmKey: algorithm,
         operation: "attack",
-        keyLengthBits: algorithm === "rsa" ? 2048 : algorithm === "md5" ? 128 : 256,
+        keyLengthBits: keyBits,
         blockSize: algorithm === "aes" ? 16 : 0,
         hashLength: algorithm === "md5" ? 128 : algorithm === "sha256" ? 256 : 0,
         encoding: "UTF-8",
-        charset: options.charset?.join("") || "Default",
-        passwordLength: attackValue.length,
-        inputLengthBytes: attackValue.length,
-        inputLengthBits: attackValue.length * 8,
+        charset: charset.join(""),
+        passwordLength: session.originalText.length,
+        inputLengthBytes: session.originalTextBytes,
+        inputLengthBits: session.originalTextBytes * 8,
         estimatedKeyspace: attack.searchSize.toString(),
-        ciphertext: ciphertextForRecord,
-        ciphertextLength: ciphertextForRecord.length,
-        ciphertextFormat: "Base64/Hex",
+        ciphertext: session.ciphertext,
+        ciphertextLength: session.ciphertextBytes,
+        ciphertextFormat: session.ciphertextFormat,
         encryptionSuccess: false,
         decryptionSuccess: false,
         outputLength: attack.foundCandidate?.length || 0,
@@ -746,15 +883,14 @@ export default function SimulacionPage() {
         foundKey: attack.foundCandidate || "",
         foundIteration: attack.foundIteration || 0,
         attackSuccess: attack.found,
-        recoveredPlaintext: attack.foundCandidate || "",
+        recoveredPlaintext: attack.recoveredPlaintext || "",
         resultStatus: attack.found ? "SUCCESS" : "FAILED",
         errorMessage: attack.reason,
         notes: `Estrategia: ${attackStrategy}`,
-        // Legacy
-        originalText: algorithm === "aes" ? input : attackValue,
-        messageSize: attackValue.length,
-        ciphertextSize: ciphertextForRecord.length,
-        keyLength: algorithm === "rsa" ? 2048 : 256,
+        originalText: session.originalText,
+        messageSize: session.originalTextBytes,
+        ciphertextSize: session.ciphertextBytes,
+        keyLength: keyBits,
         attackDurationMs: attack.elapsedMs,
         progress: attack.progress,
         memoryBytes: attack.memoryBytes,
@@ -783,6 +919,8 @@ export default function SimulacionPage() {
     else if (status === "FAILED" || label === "FALLO") color = "bg-rose-500/20 text-rose-400 border border-rose-500/30";
     else if (status === "TIME_LIMIT") color = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
     else if (status === "USER_CANCELLED") color = "bg-slate-500/20 text-slate-300 border border-slate-500/30";
+    else if (status === "MAX_ATTEMPTS") color = "bg-orange-500/20 text-orange-400 border border-orange-500/30";
+    else if (status === "DICTIONARY_EXHAUSTED" || status === "SEARCH_SPACE_EXHAUSTED") color = "bg-violet-500/20 text-violet-400 border border-violet-500/30";
 
     return (
       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold ${color}`}>
@@ -790,6 +928,8 @@ export default function SimulacionPage() {
       </span>
     );
   };
+
+  const session = useMemo(() => SessionManager.get(), [result]);
 
   return (
     <DashboardShell
@@ -863,6 +1003,29 @@ export default function SimulacionPage() {
                   </div>
                 )}
 
+                {algorithm === "rsa" && (
+                  <div className="space-y-3 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Tamaño y modo de clave RSA
+                      <select
+                        value={rsaBits}
+                        onChange={(e) => { setRsaBits(Number(e.target.value) as any); resetCrypto(); }}
+                        className="mt-2 w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs text-white"
+                      >
+                        <option value={32}>32 bits (Modo Demostración — Rápido &lt; 1s)</option>
+                        <option value={64}>64 bits (Modo Demostración — Rápido 1-3s)</option>
+                        <option value={128}>128 bits (Modo Demostración — Rápido ~5s)</option>
+                        <option value={2048}>2048 bits (Modo Real — Inviable de factorizar)</option>
+                      </select>
+                    </label>
+                    <p className="text-[10px] text-slate-400">
+                      {rsaBits <= 128
+                        ? "El modo demostración genera claves pequeñas factorizables mediante división de prueba en la simulación."
+                        : "El modo real genera una clave de 2048 bits. La simulación de ataque finalizará de inmediato por inviabilidad computacional."}
+                    </p>
+                  </div>
+                )}
+
                 <button
                   onClick={executeCrypto}
                   disabled={loading || !input}
@@ -929,7 +1092,7 @@ export default function SimulacionPage() {
                             onClick={executeDecrypt}
                             disabled={
                               loading || 
-                              (algorithm === "rsa" && !rsaPrivateKey) || 
+                              (algorithm === "rsa" && !SessionManager.rsaPrivateKey) || 
                               (algorithm === "aes" && !decryptPassword)
                             }
                             className="rounded-xl bg-slate-800 px-6 py-2 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
@@ -941,6 +1104,16 @@ export default function SimulacionPage() {
                         {decryptError && <p className="mt-3 text-xs text-rose-400">{decryptError}</p>}
                       </div>
                     )}
+
+                    {/* Botón para ir a la sección de ataques */}
+                    <div className="flex justify-end">
+                      <button
+                        onClick={switchToAttack}
+                        className="rounded-xl bg-gradient-to-r from-rose-500 to-orange-600 px-6 py-3 text-sm font-bold text-white transition-all hover:scale-[1.02]"
+                      >
+                        IR A ATAQUES →
+                      </button>
+                    </div>
                   </div>
                 </VisualPanel>
               </>
@@ -958,6 +1131,21 @@ export default function SimulacionPage() {
           <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
             <VisualPanel title="ATAQUE" subtitle="Configuración de simulación">
               <div className="space-y-5">
+                {/* Session info */}
+                {session && (
+                  <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3 text-xs">
+                    <p className="text-cyan-400 font-bold mb-1">Sesión activa: {session.algorithmLabel}</p>
+                    <p className="text-slate-400">Texto original: <span className="text-slate-200">{session.originalText}</span></p>
+                    <p className="text-slate-400">Cifrado: <span className="text-slate-200 font-mono">{session.ciphertext.substring(0, 40)}...</span></p>
+                  </div>
+                )}
+
+                {!session && (
+                  <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-xs text-amber-400">
+                    No hay sesión activa. Genera un cifrado primero.
+                  </div>
+                )}
+
                 <label className="block text-sm text-slate-400">
                   Estrategia
                   <select
@@ -965,35 +1153,68 @@ export default function SimulacionPage() {
                     onChange={(e) => setAttackStrategy(e.target.value as AttackStrategy)}
                     className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none"
                   >
-                    {attackStrategies.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    {attackStrategies
+                      .filter((s) => algorithm !== "rsa" || s.value === "trial-division")
+                      .map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </label>
 
-                <label className="block text-sm text-slate-400">
-                  Texto objetivo
-                  <input
-                    type="text"
-                    value={attackValue}
-                    onChange={(e) => setAttackValue(e.target.value)}
-                    className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none"
-                    placeholder="Valor a buscar..."
-                  />
-                </label>
+                {algorithm !== "rsa" && (
+                  <>
+                    <label className="block text-sm text-slate-400">
+                      Charset
+                      <input
+                        type="text"
+                        value={attackCharset}
+                        onChange={(e) => setAttackCharset(e.target.value)}
+                        className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none font-mono text-xs"
+                        placeholder="abcdefghijklmnopqrstuvwxyz0123456789"
+                      />
+                    </label>
+
+                    <label className="block text-sm text-slate-400">
+                      Longitud máxima
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={attackMaxLength}
+                        onChange={(e) => setAttackMaxLength(Math.max(1, Math.min(10, Number(e.target.value))))}
+                        className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none"
+                      />
+                    </label>
+                  </>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <label className="text-xs text-slate-500">
-                    Intentos
+                    Intentos máx.
                     <input type="number" value={customMaxAttempts} onChange={(e) => setCustomMaxAttempts(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-white/5 bg-slate-950 px-3 py-2 text-white" />
                   </label>
                   <label className="text-xs text-slate-500">
-                    Tiempo (ms)
+                    Tiempo máx. (ms)
                     <input type="number" value={customMaxDurationMs} onChange={(e) => setCustomMaxDurationMs(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-white/5 bg-slate-950 px-3 py-2 text-white" />
                   </label>
                 </div>
 
+                {/* Feasibility warning */}
+                {feasibility && !feasibility.feasible && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-400">
+                    <p className="font-bold mb-1">⚠ Advertencia</p>
+                    <p>{feasibility.warning}</p>
+                    <p className="mt-1 text-slate-400">Espacio total: {feasibility.totalCombinations.toLocaleString("es-EC")} combinaciones</p>
+                    <p className="text-slate-400">Tiempo estimado: {feasibility.estimatedTimeLabel}</p>
+                  </div>
+                )}
+
                 <button
                   onClick={loading ? () => abortControllerRef.current?.abort() : startAttack}
-                  className={`w-full rounded-xl py-4 font-bold text-white transition-all ${loading ? "bg-slate-800 hover:bg-rose-600" : "bg-gradient-to-r from-rose-500 to-orange-600 hover:scale-[1.01]"}`}
+                  disabled={!session}
+                  className={`w-full rounded-xl py-4 font-bold text-white transition-all ${
+                    loading ? "bg-slate-800 hover:bg-rose-600" : 
+                    !session ? "bg-slate-800 opacity-50 cursor-not-allowed" :
+                    "bg-gradient-to-r from-rose-500 to-orange-600 hover:scale-[1.01]"
+                  }`}
                 >
                   {loading ? "DETENER" : "INICIAR SIMULACIÓN"}
                 </button>
@@ -1008,6 +1229,30 @@ export default function SimulacionPage() {
                 <MetricCard label="Intentos" value={(attackSnapshot?.attempts || 0).toLocaleString()} detail="Acumulado" accent="text-blue-400" />
                 <MetricCard label="Restante" value={formatDurationMs(attackSnapshot?.estimatedRemainingMs || 0)} detail="Estimado" accent="text-purple-400" />
               </div>
+
+              {/* Current candidate info */}
+              {attackSnapshot && attackSnapshot.status === "running" && (
+                <div className="rounded-xl border border-white/5 bg-slate-900/30 p-3 text-xs">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-500">Candidato actual:</span>
+                      <span className="ml-2 font-mono text-cyan-300">{attackSnapshot.currentCandidate || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Longitud:</span>
+                      <span className="ml-2 text-slate-200">{attackSnapshot.currentCandidateLength}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Espacio total:</span>
+                      <span className="ml-2 text-slate-200">{attackSnapshot.searchSpaceLabel}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">CPU / RAM:</span>
+                      <span className="ml-2 text-slate-200">{attackSnapshot.cpuUtilization.toFixed(1)}% / {formatBytes(attackSnapshot.memoryBytes)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-6 lg:grid-cols-2">
                 <VisualPanel title="RENDIMIENTO" subtitle="Velocidad (intentos/s)">
@@ -1052,6 +1297,15 @@ export default function SimulacionPage() {
                     <div className="rounded-xl bg-emerald-400/10 p-4">
                       <p className="text-[10px] font-bold text-emerald-500 uppercase">Valor recuperado</p>
                       <p className="mt-1 font-mono text-lg text-emerald-200 break-all">{attackResult.foundCandidate}</p>
+                      {attackResult.recoveredPlaintext && attackResult.recoveredPlaintext !== attackResult.foundCandidate && (
+                        <p className="mt-1 text-xs text-emerald-400">Texto: {attackResult.recoveredPlaintext}</p>
+                      )}
+                    </div>
+                  )}
+                  {!attackResult.found && attackResult.finalReport.failureCause && (
+                    <div className="rounded-xl bg-rose-400/10 p-4">
+                      <p className="text-[10px] font-bold text-rose-500 uppercase">Causa del fallo</p>
+                      <p className="mt-1 text-xs text-rose-300">{attackResult.finalReport.failureCause}</p>
                     </div>
                   )}
                 </div>
@@ -1073,12 +1327,24 @@ export default function SimulacionPage() {
                     <p className="text-[10px] text-slate-500 uppercase">Pico RAM</p>
                     <p className="text-sm font-bold text-blue-400">{formatBytes(attackResult.peakMemoryBytes)}</p>
                   </div>
+                  <div className="rounded-xl bg-slate-900/40 p-3">
+                    <p className="text-[10px] text-slate-500 uppercase">Explorado</p>
+                    <p className="text-sm font-bold text-slate-200">{attackResult.finalReport.searchSpaceExplored}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-900/40 p-3">
+                    <p className="text-[10px] text-slate-500 uppercase">Velocidad</p>
+                    <p className="text-sm font-bold text-amber-400">{attackResult.finalReport.averageSpeed}</p>
+                  </div>
                 </div>
 
                 <div className="flex flex-col justify-center">
                   <div className="flex justify-between items-center p-3 rounded-xl border border-white/5 bg-slate-900/20">
                     <span className="text-[10px] text-slate-500 uppercase">Estado</span>
                     {renderStatusBadge(attackResult.attackStatus, attackResult.found)}
+                  </div>
+                  <div className="mt-2 p-3 rounded-xl border border-white/5 bg-slate-900/20">
+                    <p className="text-[10px] text-slate-500 uppercase">Estrategia</p>
+                    <p className="text-xs font-bold text-slate-200">{attackResult.finalReport.strategy}</p>
                   </div>
                   <button onClick={() => setShowSummary(false)} className="mt-4 text-[10px] text-slate-600 hover:text-slate-400 font-bold uppercase tracking-widest">Cerrar resumen</button>
                 </div>

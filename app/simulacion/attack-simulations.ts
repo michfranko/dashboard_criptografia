@@ -418,15 +418,16 @@ async function runBruteForceHashAttack(
 }
 
 // ─── Public: attack hash (MD5 / SHA-256) ─────────────────────────────────────
+// NOTE: targetHash is the pre-computed hash digest to attack.
+// It should come from the encryption result (result.output), not be recalculated.
 
 export async function attackHash(
   algorithm: Algorithm,
-  plainText: string,
+  targetHash: string,
   strategy: AttackStrategy,
   options: AttackOptions,
   onUpdate: (s: AttackSnapshot) => void,
 ): Promise<AttackResult> {
-  const targetHash = await hashText(algorithm, plainText);
   if (strategy === "dictionary") {
     return runDictionaryAttack(targetHash, algorithm, options, onUpdate);
   }

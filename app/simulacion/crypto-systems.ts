@@ -226,6 +226,153 @@ export async function decryptAes(envelope: string, password: string) {
   return decoder.decode(decrypted);
 }
 
+export function gcd(a: bigint, b: bigint): bigint {
+  while (b !== 0n) {
+    const t = b;
+    b = a % b;
+    a = t;
+  }
+  return a;
+}
+
+export function modInverse(a: bigint, m: bigint): bigint {
+  let [m0, y, x] = [m, 0n, 1n];
+  if (m === 1n) return 0n;
+  while (a > 1n) {
+    const q = a / m;
+    let t = m;
+    m = a % m;
+    a = t;
+    t = y;
+    y = x - q * y;
+    x = t;
+  }
+  if (x < 0n) x += m0;
+  return x;
+}
+
+export function modPow(base: bigint, exp: bigint, mod: bigint): bigint {
+  let res = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) res = (res * base) % mod;
+    base = (base * base) % mod;
+    exp /= 2n;
+  }
+  return res;
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCodePoint(bytes[i]);
+  }
+  return btoa(binary)
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function bigIntToBytes(val: bigint): Uint8Array {
+  let hex = val.toString(16);
+  if (hex.length % 2 !== 0) hex = "0" + hex;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function textToBigInt(text: string): bigint {
+  const bytes = encoder.encode(text);
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, "0");
+  }
+  return BigInt("0x" + (hex || "00"));
+}
+
+function bigIntToText(big: bigint): string {
+  let hex = big.toString(16);
+  if (hex.length % 2 !== 0) hex = "0" + hex;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return decoder.decode(bytes);
+}
+
+export interface DemoRsaKeyPair {
+  p: bigint;
+  q: bigint;
+  n: bigint;
+  e: bigint;
+  d: bigint;
+  keyBits: number;
+}
+
+export function generateDemoRsaKeyPair(bits: 32 | 64 | 128 = 64) {
+  let p: bigint;
+  let q: bigint;
+
+  if (bits === 32) {
+    p = BigInt(65407);
+    q = BigInt(65449);
+  } else if (bits === 128) {
+    // Use a small p (~10^6) so trial division finds it in < 1M iterations (< 3s).
+    // The "128-bit" label is educational — the point is to demo the attack succeeding.
+    p = BigInt(999983);          // prime ≈ 10^6
+    q = BigInt(1000033);         // prime ≈ 10^6  → n ≈ 10^12 (40 bits, easily factorable)
+  } else {
+    // 64 bits: p ≈ 2^31 — trial division takes ~2^31/5000 async batches but BATCH_SIZE
+    // is now 500_000, so it finishes in ~4300 batches (≈ 1–2 s).
+    p = BigInt(2147483647);
+    q = BigInt(2147483629);
+  }
+
+  const n = p * q;
+  const phi = (p - BigInt(1)) * (q - BigInt(1));
+
+  let e = BigInt(65537);
+  if (gcd(e, phi) !== BigInt(1)) {
+    e = BigInt(17);
+    if (gcd(e, phi) !== BigInt(1)) {
+      e = BigInt(3);
+    }
+  }
+
+  const d = modInverse(e, phi);
+
+  const demoPair: DemoRsaKeyPair = { p, q, n, e, d, keyBits: bits };
+  const publicJwk: JsonWebKey & { keyBits?: number } = {
+    kty: "RSA",
+    n: bytesToBase64Url(bigIntToBytes(n)),
+    e: bytesToBase64Url(bigIntToBytes(e)),
+    keyBits: bits,
+  };
+
+  return { demoPair, publicJwk };
+}
+
+export function encryptDemoRsa(plaintext: string, n: bigint, e: bigint) {
+  const started = performance.now();
+  const m = textToBigInt(plaintext) % n;
+  const c = modPow(m, e, n);
+  const ciphertextHex = c.toString(16);
+  const outputBytes = Math.ceil(ciphertextHex.length / 2);
+  return {
+    ciphertext: ciphertextHex,
+    outputBytes,
+    durationMs: performance.now() - started,
+  };
+}
+
+export function decryptDemoRsa(ciphertextHex: string, n: bigint, d: bigint) {
+  const c = BigInt("0x" + ciphertextHex);
+  const m = modPow(c, d, n);
+  return bigIntToText(m);
+}
+
 export async function generateRsaKeyPair() {
   const pair = await crypto.subtle.generateKey(
     { name: "RSA-OAEP", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
@@ -285,3 +432,4 @@ export function safeFormatBinarySize(value: bigint) {
   }
   return `${current.toString()} ${units[index]}B`;
 }
+
