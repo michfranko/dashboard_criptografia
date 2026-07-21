@@ -1,7 +1,7 @@
 {
     "metadata": {
         "project_name": "Dashboard Data Generation",
-        "generation_date": "2026-07-11T16:56:41.632562"
+        "generation_date": "2026-07-21T00:37:27.265190"
     },
     "files": [
         {
@@ -120,7 +120,7 @@
             "filename": "rsa_bruteforce_results.csv",
             "category": "attacks",
             "algorithm": "RSA",
-            "rows": 9,
+            "rows": 20,
             "columns": [
                 "attack_id",
                 "timestamp",
@@ -180,77 +180,77 @@
                     "target_id": 0,
                     "original_text": 0,
                     "target_value": 0,
-                    "recovered_text": 4,
+                    "recovered_text": 10,
                     "attack_successful": 0,
-                    "error_message": 5,
+                    "error_message": 10,
                     "execution_time": 0,
                     "attack_time_seconds": 0,
                     "attempts": 0,
                     "throughput": 0,
                     "attempts_per_second": 0,
                     "key_size_bits": 0,
-                    "password_length": 9,
-                    "alphabet_size": 9,
+                    "password_length": 20,
+                    "alphabet_size": 20,
                     "search_space": 0,
                     "log2_search_space": 0,
                     "plaintext_length": 0,
                     "ciphertext_length": 0,
-                    "hash_length": 9
+                    "hash_length": 20
                 },
                 "duplicates": 0,
                 "numeric_stats": {
                     "execution_time": {
-                        "count": 9.0,
-                        "mean": 0.9078728093041314,
-                        "std": 1.1713828097446763,
-                        "min": 4.76837158203125e-07,
-                        "25%": 4.291534423828125e-06,
-                        "50%": 5.7220458984375e-06,
-                        "75%": 1.769521713256836,
-                        "max": 3.018014907836914
+                        "count": 20.0,
+                        "mean": 1.5954958081245423,
+                        "std": 2.0175612076626206,
+                        "min": 1.9073486328125e-06,
+                        "25%": 3.0994415283203125e-06,
+                        "50%": 1.0671803951263428,
+                        "75%": 2.17382949590683,
+                        "max": 7.383464097976685
                     },
                     "attack_time_seconds": {
-                        "count": 9.0,
-                        "mean": 0.9078728093041314,
-                        "std": 1.1713828097446763,
-                        "min": 4.76837158203125e-07,
-                        "25%": 4.291534423828125e-06,
-                        "50%": 5.7220458984375e-06,
-                        "75%": 1.769521713256836,
-                        "max": 3.018014907836914
+                        "count": 20.0,
+                        "mean": 1.5954958081245423,
+                        "std": 2.0175612076626206,
+                        "min": 1.9073486328125e-06,
+                        "25%": 3.0994415283203125e-06,
+                        "50%": 1.0671803951263428,
+                        "75%": 2.17382949590683,
+                        "max": 7.383464097976685
                     },
                     "attempts": {
-                        "count": 9.0,
-                        "mean": 6375287.666666667,
-                        "std": 7560155.232772506,
+                        "count": 20.0,
+                        "mean": 7172198.25,
+                        "std": 7358514.498482383,
                         "min": 1.0,
-                        "25%": 4.0,
-                        "50%": 10.0,
+                        "25%": 5.75,
+                        "50%": 7172200.5,
                         "75%": 14344391.0,
                         "max": 14344391.0
                     },
                     "throughput": {
-                        "count": 9.0,
-                        "mean": 4450918.625688235,
-                        "std": 3674576.8477785015,
-                        "min": 932067.5555555556,
-                        "25%": 2097152.0,
-                        "50%": 2330168.888888889,
-                        "75%": 6651633.479721578,
-                        "max": 11692703.664383631
+                        "count": 20.0,
+                        "mean": 3381418.0561952293,
+                        "std": 2401813.5585247423,
+                        "min": 381300.3636363637,
+                        "25%": 1282489.1076923078,
+                        "50%": 2294320.136752137,
+                        "75%": 6561725.0696979035,
+                        "max": 6720721.981606153
                     },
                     "attempts_per_second": {
-                        "count": 9.0,
-                        "mean": 4450918.625688235,
-                        "std": 3674576.8477785015,
-                        "min": 932067.5555555556,
-                        "25%": 2097152.0,
-                        "50%": 2330168.888888889,
-                        "75%": 6651633.479721578,
-                        "max": 11692703.664383631
+                        "count": 20.0,
+                        "mean": 3381418.0561952293,
+                        "std": 2401813.5585247423,
+                        "min": 381300.3636363637,
+                        "25%": 1282489.1076923078,
+                        "50%": 2294320.136752137,
+                        "75%": 6561725.0696979035,
+                        "max": 6720721.981606153
                     },
                     "key_size_bits": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 2048.0,
                         "std": 0.0,
                         "min": 2048.0,
@@ -280,7 +280,7 @@
                         "max": null
                     },
                     "search_space": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 14344391.0,
                         "std": 0.0,
                         "min": 14344391.0,
@@ -290,9 +290,9 @@
                         "max": 14344391.0
                     },
                     "log2_search_space": {
-                        "count": 9.0,
-                        "mean": 23.77398338310721,
-                        "std": 0.0,
+                        "count": 20.0,
+                        "mean": 23.773983383107215,
+                        "std": 1.093502197681837e-14,
                         "min": 23.77398338310721,
                         "25%": 23.77398338310721,
                         "50%": 23.77398338310721,
@@ -300,17 +300,17 @@
                         "max": 23.77398338310721
                     },
                     "plaintext_length": {
-                        "count": 9.0,
-                        "mean": 8.88888888888889,
-                        "std": 3.48010216963685,
+                        "count": 20.0,
+                        "mean": 9.1,
+                        "std": 2.7510763443844266,
                         "min": 5.0,
-                        "25%": 6.0,
+                        "25%": 7.75,
                         "50%": 8.0,
                         "75%": 11.0,
                         "max": 16.0
                     },
                     "ciphertext_length": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 512.0,
                         "std": 0.0,
                         "min": 512.0,
@@ -340,9 +340,9 @@
                     "target_id": 0.0,
                     "original_text": 0.0,
                     "target_value": 0.0,
-                    "recovered_text": 0.4444444444444444,
+                    "recovered_text": 0.5,
                     "attack_successful": 0.0,
-                    "error_message": 0.5555555555555556,
+                    "error_message": 0.5,
                     "execution_time": 0.0,
                     "attack_time_seconds": 0.0,
                     "attempts": 0.0,
@@ -360,8 +360,8 @@
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
                 "columns_count": 23,
-                "rows_count": 9,
-                "memory_bytes": 10767
+                "rows_count": 20,
+                "memory_bytes": 23806
             }
         },
         {
@@ -480,7 +480,7 @@
             "filename": "sha256_bruteforce_results.csv",
             "category": "attacks",
             "algorithm": "SHA",
-            "rows": 9,
+            "rows": 20,
             "columns": [
                 "attack_id",
                 "timestamp",
@@ -540,17 +540,17 @@
                     "target_id": 0,
                     "original_text": 0,
                     "target_value": 0,
-                    "recovered_text": 6,
+                    "recovered_text": 10,
                     "attack_successful": 0,
-                    "error_message": 3,
+                    "error_message": 10,
                     "execution_time": 0,
                     "attack_time_seconds": 0,
                     "attempts": 0,
                     "throughput": 0,
                     "attempts_per_second": 0,
                     "key_size_bits": 0,
-                    "password_length": 9,
-                    "alphabet_size": 9,
+                    "password_length": 20,
+                    "alphabet_size": 20,
                     "search_space": 0,
                     "log2_search_space": 0,
                     "plaintext_length": 0,
@@ -560,57 +560,57 @@
                 "duplicates": 0,
                 "numeric_stats": {
                     "execution_time": {
-                        "count": 9.0,
-                        "mean": 7.493944088617961,
-                        "std": 5.667877559962107,
-                        "min": 2.3603439331054688e-05,
-                        "25%": 8.559226989746094e-05,
-                        "50%": 10.777163982391356,
-                        "75%": 10.843177318572998,
-                        "max": 13.099644660949709
+                        "count": 20.0,
+                        "mean": 10.158572781085969,
+                        "std": 10.444310451169217,
+                        "min": 1.9788742065429688e-05,
+                        "25%": 0.00010216236114495155,
+                        "50%": 9.626148223876953,
+                        "75%": 20.09744739532471,
+                        "max": 21.67165327072144
                     },
                     "attack_time_seconds": {
-                        "count": 9.0,
-                        "mean": 7.493944088617961,
-                        "std": 5.667877559962107,
-                        "min": 2.3603439331054688e-05,
-                        "25%": 8.559226989746094e-05,
-                        "50%": 10.777163982391356,
-                        "75%": 10.843177318572998,
-                        "max": 13.099644660949709
+                        "count": 20.0,
+                        "mean": 10.158572781085969,
+                        "std": 10.444310451169217,
+                        "min": 1.9788742065429688e-05,
+                        "25%": 0.00010216236114495155,
+                        "50%": 9.626148223876953,
+                        "75%": 20.09744739532471,
+                        "max": 21.67165327072144
                     },
                     "attempts": {
-                        "count": 9.0,
-                        "mean": 9562946.666666666,
-                        "std": 7172166.500019311,
-                        "min": 34.0,
-                        "25%": 96.0,
-                        "50%": 14344391.0,
+                        "count": 20.0,
+                        "mean": 7172226.35,
+                        "std": 7358485.668507855,
+                        "min": 16.0,
+                        "25%": 69.75,
+                        "50%": 7172239.0,
                         "75%": 14344391.0,
                         "max": 14344391.0
                     },
                     "throughput": {
-                        "count": 9.0,
-                        "mean": 1268664.4021712583,
-                        "std": 116259.45907137635,
-                        "min": 1095021.381973887,
-                        "25%": 1160687.8993710692,
-                        "50%": 1322895.5479156338,
-                        "75%": 1330998.6767796315,
-                        "max": 1440468.0404040404
+                        "count": 20.0,
+                        "mean": 698081.442238991,
+                        "std": 133388.59949582687,
+                        "min": 414735.2835820895,
+                        "25%": 674105.0685812633,
+                        "50%": 740223.628644804,
+                        "75%": 759322.5793500617,
+                        "max": 881605.2993630574
                     },
                     "attempts_per_second": {
-                        "count": 9.0,
-                        "mean": 1268664.4021712583,
-                        "std": 116259.45907137635,
-                        "min": 1095021.381973887,
-                        "25%": 1160687.8993710692,
-                        "50%": 1322895.5479156338,
-                        "75%": 1330998.6767796315,
-                        "max": 1440468.0404040404
+                        "count": 20.0,
+                        "mean": 698081.442238991,
+                        "std": 133388.59949582687,
+                        "min": 414735.2835820895,
+                        "25%": 674105.0685812633,
+                        "50%": 740223.628644804,
+                        "75%": 759322.5793500617,
+                        "max": 881605.2993630574
                     },
                     "key_size_bits": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 256.0,
                         "std": 0.0,
                         "min": 256.0,
@@ -640,7 +640,7 @@
                         "max": null
                     },
                     "search_space": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 14344391.0,
                         "std": 0.0,
                         "min": 14344391.0,
@@ -650,9 +650,9 @@
                         "max": 14344391.0
                     },
                     "log2_search_space": {
-                        "count": 9.0,
-                        "mean": 23.77398338310721,
-                        "std": 0.0,
+                        "count": 20.0,
+                        "mean": 23.773983383107215,
+                        "std": 1.093502197681837e-14,
                         "min": 23.77398338310721,
                         "25%": 23.77398338310721,
                         "50%": 23.77398338310721,
@@ -660,17 +660,17 @@
                         "max": 23.77398338310721
                     },
                     "plaintext_length": {
-                        "count": 9.0,
-                        "mean": 9.666666666666666,
-                        "std": 4.092676385936225,
-                        "min": 5.0,
-                        "25%": 6.0,
-                        "50%": 9.0,
-                        "75%": 11.0,
+                        "count": 20.0,
+                        "mean": 9.25,
+                        "std": 3.3541019662496847,
+                        "min": 6.0,
+                        "25%": 6.75,
+                        "50%": 8.0,
+                        "75%": 11.25,
                         "max": 16.0
                     },
                     "ciphertext_length": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 64.0,
                         "std": 0.0,
                         "min": 64.0,
@@ -680,7 +680,7 @@
                         "max": 64.0
                     },
                     "hash_length": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 64.0,
                         "std": 0.0,
                         "min": 64.0,
@@ -700,9 +700,9 @@
                     "target_id": 0.0,
                     "original_text": 0.0,
                     "target_value": 0.0,
-                    "recovered_text": 0.6666666666666666,
+                    "recovered_text": 0.5,
                     "attack_successful": 0.0,
-                    "error_message": 0.3333333333333333,
+                    "error_message": 0.5,
                     "execution_time": 0.0,
                     "attack_time_seconds": 0.0,
                     "attempts": 0.0,
@@ -720,8 +720,8 @@
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
                 "columns_count": 23,
-                "rows_count": 9,
-                "memory_bytes": 6827
+                "rows_count": 20,
+                "memory_bytes": 14924
             }
         },
         {
@@ -840,7 +840,7 @@
             "filename": "md5_bruteforce_results.csv",
             "category": "attacks",
             "algorithm": "MD5",
-            "rows": 9,
+            "rows": 20,
             "columns": [
                 "attack_id",
                 "timestamp",
@@ -900,17 +900,17 @@
                     "target_id": 0,
                     "original_text": 0,
                     "target_value": 0,
-                    "recovered_text": 6,
+                    "recovered_text": 10,
                     "attack_successful": 0,
-                    "error_message": 3,
+                    "error_message": 10,
                     "execution_time": 0,
                     "attack_time_seconds": 0,
                     "attempts": 0,
                     "throughput": 0,
                     "attempts_per_second": 0,
                     "key_size_bits": 0,
-                    "password_length": 9,
-                    "alphabet_size": 9,
+                    "password_length": 20,
+                    "alphabet_size": 20,
                     "search_space": 0,
                     "log2_search_space": 0,
                     "plaintext_length": 0,
@@ -920,57 +920,57 @@
                 "duplicates": 0,
                 "numeric_stats": {
                     "execution_time": {
-                        "count": 9.0,
-                        "mean": 7.773443142573039,
-                        "std": 5.831818729395177,
-                        "min": 2.5510787963867188e-05,
-                        "25%": 8.511543273925781e-05,
-                        "50%": 11.514923334121704,
-                        "75%": 11.639250993728638,
-                        "max": 11.949847936630247
+                        "count": 20.0,
+                        "mean": 8.674859941005707,
+                        "std": 8.917499575984147,
+                        "min": 1.6450881958007812e-05,
+                        "25%": 7.665157318115234e-05,
+                        "50%": 8.351084351539612,
+                        "75%": 16.959086775779724,
+                        "max": 19.109745502471924
                     },
                     "attack_time_seconds": {
-                        "count": 9.0,
-                        "mean": 7.773443142573039,
-                        "std": 5.831818729395177,
-                        "min": 2.5510787963867188e-05,
-                        "25%": 8.511543273925781e-05,
-                        "50%": 11.514923334121704,
-                        "75%": 11.639250993728638,
-                        "max": 11.949847936630247
+                        "count": 20.0,
+                        "mean": 8.674859941005707,
+                        "std": 8.917499575984147,
+                        "min": 1.6450881958007812e-05,
+                        "25%": 7.665157318115234e-05,
+                        "50%": 8.351084351539612,
+                        "75%": 16.959086775779724,
+                        "max": 19.109745502471924
                     },
                     "attempts": {
-                        "count": 9.0,
-                        "mean": 9562946.666666666,
-                        "std": 7172166.500019311,
-                        "min": 34.0,
-                        "25%": 96.0,
-                        "50%": 14344391.0,
+                        "count": 20.0,
+                        "mean": 7172226.35,
+                        "std": 7358485.668507855,
+                        "min": 16.0,
+                        "25%": 69.75,
+                        "50%": 7172239.0,
                         "75%": 14344391.0,
                         "max": 14344391.0
                     },
                     "throughput": {
-                        "count": 9.0,
-                        "mean": 1237103.8976948243,
-                        "std": 57030.91672492196,
-                        "min": 1127880.0672268907,
-                        "25%": 1217444.8243326368,
-                        "50%": 1234125.55690996,
-                        "75%": 1252640.2384173004,
-                        "max": 1332769.4953271027
+                        "count": 20.0,
+                        "mean": 794811.3980609974,
+                        "std": 165523.5203475403,
+                        "min": 454555.11330049264,
+                        "25%": 771633.456932385,
+                        "50%": 843808.1838019319,
+                        "75%": 867475.5022529642,
+                        "max": 1031386.2295081968
                     },
                     "attempts_per_second": {
-                        "count": 9.0,
-                        "mean": 1237103.8976948243,
-                        "std": 57030.91672492196,
-                        "min": 1127880.0672268907,
-                        "25%": 1217444.8243326368,
-                        "50%": 1234125.55690996,
-                        "75%": 1252640.2384173004,
-                        "max": 1332769.4953271027
+                        "count": 20.0,
+                        "mean": 794811.3980609974,
+                        "std": 165523.5203475403,
+                        "min": 454555.11330049264,
+                        "25%": 771633.456932385,
+                        "50%": 843808.1838019319,
+                        "75%": 867475.5022529642,
+                        "max": 1031386.2295081968
                     },
                     "key_size_bits": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 128.0,
                         "std": 0.0,
                         "min": 128.0,
@@ -1000,7 +1000,7 @@
                         "max": null
                     },
                     "search_space": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 14344391.0,
                         "std": 0.0,
                         "min": 14344391.0,
@@ -1010,9 +1010,9 @@
                         "max": 14344391.0
                     },
                     "log2_search_space": {
-                        "count": 9.0,
-                        "mean": 23.77398338310721,
-                        "std": 0.0,
+                        "count": 20.0,
+                        "mean": 23.773983383107215,
+                        "std": 1.093502197681837e-14,
                         "min": 23.77398338310721,
                         "25%": 23.77398338310721,
                         "50%": 23.77398338310721,
@@ -1020,17 +1020,17 @@
                         "max": 23.77398338310721
                     },
                     "plaintext_length": {
-                        "count": 9.0,
-                        "mean": 9.666666666666666,
-                        "std": 4.092676385936225,
-                        "min": 5.0,
-                        "25%": 6.0,
-                        "50%": 9.0,
-                        "75%": 11.0,
+                        "count": 20.0,
+                        "mean": 9.25,
+                        "std": 3.3541019662496847,
+                        "min": 6.0,
+                        "25%": 6.75,
+                        "50%": 8.0,
+                        "75%": 11.25,
                         "max": 16.0
                     },
                     "ciphertext_length": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 32.0,
                         "std": 0.0,
                         "min": 32.0,
@@ -1040,7 +1040,7 @@
                         "max": 32.0
                     },
                     "hash_length": {
-                        "count": 9.0,
+                        "count": 20.0,
                         "mean": 32.0,
                         "std": 0.0,
                         "min": 32.0,
@@ -1060,9 +1060,9 @@
                     "target_id": 0.0,
                     "original_text": 0.0,
                     "target_value": 0.0,
-                    "recovered_text": 0.6666666666666666,
+                    "recovered_text": 0.5,
                     "attack_successful": 0.0,
-                    "error_message": 0.3333333333333333,
+                    "error_message": 0.5,
                     "execution_time": 0.0,
                     "attack_time_seconds": 0.0,
                     "attempts": 0.0,
@@ -1080,8 +1080,8 @@
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
                 "columns_count": 23,
-                "rows_count": 9,
-                "memory_bytes": 6503
+                "rows_count": 20,
+                "memory_bytes": 14204
             }
         },
         {
@@ -1179,23 +1179,23 @@
                     },
                     "execution_time": {
                         "count": 9.0,
-                        "mean": 162.1909830570221,
-                        "std": 7.161271478228468,
-                        "min": 156.50627326965332,
-                        "25%": 158.09455752372742,
-                        "50%": 160.85697627067566,
-                        "75%": 161.9441568851471,
-                        "max": 180.483779668808
+                        "mean": 228.20190167427063,
+                        "std": 12.485247866772552,
+                        "min": 220.95088839530945,
+                        "25%": 222.1295142173767,
+                        "50%": 225.0952124595642,
+                        "75%": 226.308452129364,
+                        "max": 261.06670022010803
                     },
                     "attack_time_seconds": {
                         "count": 9.0,
-                        "mean": 162.1909830570221,
-                        "std": 7.161271478228468,
-                        "min": 156.50627326965332,
-                        "25%": 158.09455752372742,
-                        "50%": 160.85697627067566,
-                        "75%": 161.9441568851471,
-                        "max": 180.483779668808
+                        "mean": 228.20190167427063,
+                        "std": 12.485247866772552,
+                        "min": 220.95088839530945,
+                        "25%": 222.1295142173767,
+                        "50%": 225.0952124595642,
+                        "75%": 226.308452129364,
+                        "max": 261.06670022010803
                     },
                     "attempts": {
                         "count": 9.0,
@@ -1209,23 +1209,23 @@
                     },
                     "throughput": {
                         "count": 9.0,
-                        "mean": 88582.79515686083,
-                        "std": 3606.080812481039,
-                        "min": 79477.45235789221,
-                        "25%": 88576.15659559258,
-                        "50%": 89174.81437586238,
-                        "75%": 90732.98426384565,
-                        "max": 91653.77655683651
+                        "mean": 63007.934477485054,
+                        "std": 3077.2634317100496,
+                        "min": 54945.31086464147,
+                        "25%": 63384.24776022223,
+                        "50%": 63725.8822311772,
+                        "75%": 64576.69999657285,
+                        "max": 64921.17367881339
                     },
                     "attempts_per_second": {
                         "count": 9.0,
-                        "mean": 88582.79515686083,
-                        "std": 3606.080812481039,
-                        "min": 79477.45235789221,
-                        "25%": 88576.15659559258,
-                        "50%": 89174.81437586238,
-                        "75%": 90732.98426384565,
-                        "max": 91653.77655683651
+                        "mean": 63007.934477485054,
+                        "std": 3077.2634317100496,
+                        "min": 54945.31086464147,
+                        "25%": 63384.24776022223,
+                        "50%": 63725.8822311772,
+                        "75%": 64576.69999657285,
+                        "max": 64921.17367881339
                     },
                     "key_size_bits": {
                         "count": 9.0,
@@ -1343,170 +1343,91 @@
             }
         },
         {
-            "filename": "all_attack_results.csv",
+            "filename": "algorithm_comparison.csv",
             "category": "attacks",
             "algorithm": "RESULTADOS_GLOBALES",
-            "rows": 36,
+            "rows": 4,
             "columns": [
-                "attack_id",
-                "timestamp",
                 "algoritmo",
-                "attack_type",
-                "target_id",
-                "original_text",
-                "target_value",
-                "recovered_text",
-                "attack_successful",
-                "error_message",
-                "execution_time",
-                "attack_time_seconds",
-                "attempts",
-                "throughput",
-                "attempts_per_second",
-                "key_size_bits",
-                "password_length",
-                "alphabet_size",
-                "search_space",
-                "log2_search_space",
-                "plaintext_length",
-                "ciphertext_length",
-                "hash_length"
+                "average_time",
+                "average_attempts",
+                "average_attempts_per_second",
+                "success_rate",
+                "average_search_space",
+                "average_key_size",
+                "average_password_length",
+                "average_plaintext_length",
+                "average_ciphertext_length"
             ],
             "schema": {
-                "attack_id": "string",
-                "timestamp": "string",
                 "algoritmo": "string",
-                "attack_type": "string",
-                "target_id": "string",
-                "original_text": "float",
-                "target_value": "string",
-                "recovered_text": "float",
-                "attack_successful": "bool",
-                "error_message": "string",
-                "execution_time": "float",
-                "attack_time_seconds": "float",
-                "attempts": "float",
-                "throughput": "float",
-                "attempts_per_second": "float",
-                "key_size_bits": "float",
-                "password_length": "bool",
-                "alphabet_size": "bool",
-                "search_space": "float",
-                "log2_search_space": "float",
-                "plaintext_length": "float",
-                "ciphertext_length": "float",
-                "hash_length": "float"
+                "average_time": "float",
+                "average_attempts": "float",
+                "average_attempts_per_second": "float",
+                "success_rate": "float",
+                "average_search_space": "float",
+                "average_key_size": "float",
+                "average_password_length": "bool",
+                "average_plaintext_length": "float",
+                "average_ciphertext_length": "float"
             },
             "summary": {
                 "nulls": {
-                    "attack_id": 0,
-                    "timestamp": 0,
                     "algoritmo": 0,
-                    "attack_type": 0,
-                    "target_id": 0,
-                    "original_text": 0,
-                    "target_value": 0,
-                    "recovered_text": 25,
-                    "attack_successful": 0,
-                    "error_message": 11,
-                    "execution_time": 0,
-                    "attack_time_seconds": 0,
-                    "attempts": 0,
-                    "throughput": 0,
-                    "attempts_per_second": 0,
-                    "key_size_bits": 0,
-                    "password_length": 36,
-                    "alphabet_size": 36,
-                    "search_space": 0,
-                    "log2_search_space": 0,
-                    "plaintext_length": 0,
-                    "ciphertext_length": 0,
-                    "hash_length": 18
+                    "average_time": 0,
+                    "average_attempts": 0,
+                    "average_attempts_per_second": 0,
+                    "success_rate": 0,
+                    "average_search_space": 0,
+                    "average_key_size": 0,
+                    "average_password_length": 4,
+                    "average_plaintext_length": 0,
+                    "average_ciphertext_length": 0
                 },
                 "duplicates": 0,
                 "numeric_stats": {
-                    "execution_time": {
-                        "count": 36.0,
-                        "mean": 44.5915607743793,
-                        "std": 69.11224578842412,
-                        "min": 4.76837158203125e-07,
-                        "25%": 7.331371307373047e-05,
-                        "50%": 10.813582062721252,
-                        "75%": 48.95130181312561,
-                        "max": 180.483779668808
+                    "average_time": {
+                        "count": 4.0,
+                        "mean": 62.15770755112172,
+                        "std": 110.75916952037397,
+                        "min": 1.5954958081245425,
+                        "25%": 6.905018907785416,
+                        "50%": 9.416716361045838,
+                        "75%": 64.66940500438213,
+                        "max": 228.20190167427063
                     },
-                    "attack_time_seconds": {
-                        "count": 36.0,
-                        "mean": 44.5915607743793,
-                        "std": 69.11224578842412,
-                        "min": 4.76837158203125e-07,
-                        "25%": 7.331371307373047e-05,
-                        "50%": 10.813582062721252,
-                        "75%": 48.95130181312561,
-                        "max": 180.483779668808
-                    },
-                    "attempts": {
-                        "count": 36.0,
-                        "mean": 9961393.0,
-                        "std": 6701347.8623560965,
-                        "min": 1.0,
-                        "25%": 83.0,
-                        "50%": 14344391.0,
-                        "75%": 14344391.0,
+                    "average_attempts": {
+                        "count": 4.0,
+                        "mean": 8965260.4875,
+                        "std": 3586087.0083577987,
+                        "min": 7172198.25,
+                        "25%": 7172219.324999999,
+                        "50%": 7172226.35,
+                        "75%": 8965267.5125,
                         "max": 14344391.0
                     },
-                    "throughput": {
-                        "count": 36.0,
-                        "mean": 1761317.4301777948,
-                        "std": 2408911.4178356645,
-                        "min": 79477.45235789221,
-                        "25%": 721964.1108058759,
-                        "50%": 1239923.6774717304,
-                        "75%": 1350841.7746501134,
-                        "max": 11692703.664383631
+                    "average_attempts_per_second": {
+                        "count": 4.0,
+                        "mean": 1234329.7077431758,
+                        "std": 1467733.1296239307,
+                        "min": 63007.934477485054,
+                        "25%": 539313.0652986146,
+                        "50%": 746446.4201499943,
+                        "75%": 1441463.0625945553,
+                        "max": 3381418.0561952293
                     },
-                    "attempts_per_second": {
-                        "count": 36.0,
-                        "mean": 1761317.4301777948,
-                        "std": 2408911.4178356645,
-                        "min": 79477.45235789221,
-                        "25%": 721964.1108058759,
-                        "50%": 1239923.6774717304,
-                        "75%": 1350841.7746501134,
-                        "max": 11692703.664383631
+                    "success_rate": {
+                        "count": 4.0,
+                        "mean": 37.5,
+                        "std": 25.0,
+                        "min": 0.0,
+                        "25%": 37.5,
+                        "50%": 50.0,
+                        "75%": 50.0,
+                        "max": 50.0
                     },
-                    "key_size_bits": {
-                        "count": 36.0,
-                        "mean": 672.0,
-                        "std": 807.4442218683415,
-                        "min": 128.0,
-                        "25%": 224.0,
-                        "50%": 256.0,
-                        "75%": 704.0,
-                        "max": 2048.0
-                    },
-                    "password_length": {
-                        "count": 0.0,
-                        "mean": null,
-                        "std": null,
-                        "min": null,
-                        "25%": null,
-                        "50%": null,
-                        "75%": null,
-                        "max": null
-                    },
-                    "alphabet_size": {
-                        "count": 0.0,
-                        "mean": null,
-                        "std": null,
-                        "min": null,
-                        "25%": null,
-                        "50%": null,
-                        "75%": null,
-                        "max": null
-                    },
-                    "search_space": {
-                        "count": 36.0,
+                    "average_search_space": {
+                        "count": 4.0,
                         "mean": 14344391.0,
                         "std": 0.0,
                         "min": 14344391.0,
@@ -1515,79 +1436,66 @@
                         "75%": 14344391.0,
                         "max": 14344391.0
                     },
-                    "log2_search_space": {
-                        "count": 36.0,
-                        "mean": 23.773983383107208,
-                        "std": 7.206218595529065e-15,
-                        "min": 23.77398338310721,
-                        "25%": 23.77398338310721,
-                        "50%": 23.77398338310721,
-                        "75%": 23.77398338310721,
-                        "max": 23.77398338310721
+                    "average_key_size": {
+                        "count": 4.0,
+                        "mean": 672.0,
+                        "std": 919.3156875270504,
+                        "min": 128.0,
+                        "25%": 224.0,
+                        "50%": 256.0,
+                        "75%": 704.0,
+                        "max": 2048.0
                     },
-                    "plaintext_length": {
-                        "count": 36.0,
-                        "mean": 9.194444444444445,
-                        "std": 3.670885019364788,
-                        "min": 5.0,
-                        "25%": 6.0,
-                        "50%": 8.0,
-                        "75%": 11.0,
-                        "max": 16.0
+                    "average_password_length": {
+                        "count": 0.0,
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "25%": null,
+                        "50%": null,
+                        "75%": null,
+                        "max": null
                     },
-                    "ciphertext_length": {
-                        "count": 36.0,
+                    "average_plaintext_length": {
+                        "count": 4.0,
+                        "mean": 9.03888888888889,
+                        "std": 0.3298896186511895,
+                        "min": 8.555555555555555,
+                        "25%": 8.963888888888889,
+                        "50%": 9.175,
+                        "75%": 9.25,
+                        "max": 9.25
+                    },
+                    "average_ciphertext_length": {
+                        "count": 4.0,
                         "mean": 156.27777777777777,
-                        "std": 209.02393726366924,
-                        "min": 10.0,
-                        "25%": 31.5,
+                        "std": 237.9536473172978,
+                        "min": 17.11111111111111,
+                        "25%": 28.27777777777778,
                         "50%": 48.0,
                         "75%": 176.0,
                         "max": 512.0
-                    },
-                    "hash_length": {
-                        "count": 18.0,
-                        "mean": 48.0,
-                        "std": 16.46386417368085,
-                        "min": 32.0,
-                        "25%": 32.0,
-                        "50%": 48.0,
-                        "75%": 64.0,
-                        "max": 64.0
                     }
                 }
             },
             "quality": {
                 "null_ratio_per_column": {
-                    "attack_id": 0.0,
-                    "timestamp": 0.0,
                     "algoritmo": 0.0,
-                    "attack_type": 0.0,
-                    "target_id": 0.0,
-                    "original_text": 0.0,
-                    "target_value": 0.0,
-                    "recovered_text": 0.6944444444444444,
-                    "attack_successful": 0.0,
-                    "error_message": 0.3055555555555556,
-                    "execution_time": 0.0,
-                    "attack_time_seconds": 0.0,
-                    "attempts": 0.0,
-                    "throughput": 0.0,
-                    "attempts_per_second": 0.0,
-                    "key_size_bits": 0.0,
-                    "password_length": 1.0,
-                    "alphabet_size": 1.0,
-                    "search_space": 0.0,
-                    "log2_search_space": 0.0,
-                    "plaintext_length": 0.0,
-                    "ciphertext_length": 0.0,
-                    "hash_length": 0.5
+                    "average_time": 0.0,
+                    "average_attempts": 0.0,
+                    "average_attempts_per_second": 0.0,
+                    "success_rate": 0.0,
+                    "average_search_space": 0.0,
+                    "average_key_size": 0.0,
+                    "average_password_length": 1.0,
+                    "average_plaintext_length": 0.0,
+                    "average_ciphertext_length": 0.0
                 },
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
-                "columns_count": 23,
-                "rows_count": 36,
-                "memory_bytes": 30202
+                "columns_count": 10,
+                "rows_count": 4,
+                "memory_bytes": 632
             }
         },
         {
@@ -1648,103 +1556,103 @@
                 "numeric_stats": {
                     "total_attacks": {
                         "count": 4.0,
-                        "mean": 9.0,
-                        "std": 0.0,
+                        "mean": 17.25,
+                        "std": 5.5,
                         "min": 9.0,
-                        "25%": 9.0,
-                        "50%": 9.0,
-                        "75%": 9.0,
-                        "max": 9.0
+                        "25%": 17.25,
+                        "50%": 20.0,
+                        "75%": 20.0,
+                        "max": 20.0
                     },
                     "successful_attacks": {
                         "count": 4.0,
-                        "mean": 2.75,
-                        "std": 2.0615528128088303,
+                        "mean": 7.5,
+                        "std": 5.0,
                         "min": 0.0,
-                        "25%": 2.25,
-                        "50%": 3.0,
-                        "75%": 3.5,
-                        "max": 5.0
+                        "25%": 7.5,
+                        "50%": 10.0,
+                        "75%": 10.0,
+                        "max": 10.0
                     },
                     "failed_attacks": {
                         "count": 4.0,
-                        "mean": 6.25,
-                        "std": 2.0615528128088303,
-                        "min": 4.0,
-                        "25%": 5.5,
-                        "50%": 6.0,
-                        "75%": 6.75,
-                        "max": 9.0
+                        "mean": 9.75,
+                        "std": 0.5,
+                        "min": 9.0,
+                        "25%": 9.75,
+                        "50%": 10.0,
+                        "75%": 10.0,
+                        "max": 10.0
                     },
                     "average_attempts": {
                         "count": 4.0,
-                        "mean": 9961393.0,
-                        "std": 3285744.0502296854,
-                        "min": 6375287.666666667,
-                        "25%": 8766031.916666666,
-                        "50%": 9562946.666666666,
-                        "75%": 10758307.75,
+                        "mean": 8965260.4875,
+                        "std": 3586087.0083577987,
+                        "min": 7172198.25,
+                        "25%": 7172219.324999999,
+                        "50%": 7172226.35,
+                        "75%": 8965267.5125,
                         "max": 14344391.0
                     },
                     "median_attempts": {
                         "count": 4.0,
-                        "mean": 10758295.75,
-                        "std": 7172190.5,
-                        "min": 10.0,
-                        "25%": 10758295.75,
-                        "50%": 14344391.0,
-                        "75%": 14344391.0,
+                        "mean": 8965267.375,
+                        "std": 3586082.4167125924,
+                        "min": 7172200.5,
+                        "25%": 7172229.375,
+                        "50%": 7172239.0,
+                        "75%": 8965277.0,
                         "max": 14344391.0
                     },
                     "std_attempts": {
                         "count": 4.0,
-                        "mean": 5476122.058202782,
-                        "std": 3655326.7326043383,
+                        "mean": 5518871.458874525,
+                        "std": 3679247.6392747834,
                         "min": 0.0,
-                        "25%": 5379124.875014483,
-                        "50%": 7172166.500019311,
-                        "75%": 7269163.68320761,
-                        "max": 7560155.232772506
+                        "25%": 5518864.2513808925,
+                        "50%": 7358485.668507856,
+                        "75%": 7358492.876001488,
+                        "max": 7358514.498482385
                     },
                     "average_time": {
                         "count": 4.0,
-                        "mean": 44.5915607743793,
-                        "std": 78.4637828664805,
-                        "min": 0.9078728093041314,
-                        "25%": 5.847426268789503,
-                        "50%": 7.6336936155955,
-                        "75%": 46.3778281211853,
-                        "max": 162.1909830570221
+                        "mean": 62.15770755112172,
+                        "std": 110.75916952037397,
+                        "min": 1.5954958081245425,
+                        "25%": 6.905018907785416,
+                        "50%": 9.416716361045838,
+                        "75%": 64.66940500438213,
+                        "max": 228.20190167427063
                     },
                     "median_time": {
                         "count": 4.0,
-                        "mean": 45.787267327308655,
-                        "std": 76.89345906432071,
-                        "min": 5.7220458984375e-06,
-                        "25%": 8.082874417304991,
-                        "50%": 11.14604365825653,
-                        "75%": 48.85043656826019,
-                        "max": 160.85697627067566
+                        "mean": 61.03490635752678,
+                        "std": 109.43850283667447,
+                        "min": 1.0671803951263428,
+                        "25%": 6.5301083624362946,
+                        "50%": 8.988616287708282,
+                        "75%": 63.49341428279877,
+                        "max": 225.0952124595642
                     },
                     "std_time": {
                         "count": 4.0,
-                        "mean": 4.958087644332606,
-                        "std": 2.611535962070699,
-                        "min": 1.1713828097446763,
-                        "25%": 4.543753872407748,
-                        "50%": 5.749848144678642,
-                        "75%": 6.164181916603498,
-                        "max": 7.161271478228462
+                        "mean": 8.466154775397136,
+                        "std": 4.54071507898535,
+                        "min": 2.01756120766262,
+                        "25%": 7.1925149839037665,
+                        "50%": 9.680905013576682,
+                        "75%": 10.95454480507005,
+                        "max": 12.485247866772555
                     },
                     "average_attempts_per_second": {
                         "count": 4.0,
-                        "mean": 1761317.4301777948,
-                        "std": 1875233.5484531068,
-                        "min": 88582.79515686081,
-                        "25%": 949973.6220603336,
-                        "50%": 1252884.1499330415,
-                        "75%": 2064227.9580505025,
-                        "max": 4450918.625688235
+                        "mean": 1234329.7077431758,
+                        "std": 1467733.1296239307,
+                        "min": 63007.934477485054,
+                        "25%": 539313.0652986146,
+                        "50%": 746446.4201499943,
+                        "75%": 1441463.0625945553,
+                        "max": 3381418.0561952293
                     },
                     "average_search_space": {
                         "count": 4.0,
@@ -1768,13 +1676,13 @@
                     },
                     "success_rate": {
                         "count": 4.0,
-                        "mean": 30.555555555555554,
-                        "std": 22.906142364542557,
+                        "mean": 37.5,
+                        "std": 25.0,
                         "min": 0.0,
-                        "25%": 24.999999999999996,
-                        "50%": 33.33333333333333,
-                        "75%": 38.888888888888886,
-                        "max": 55.55555555555556
+                        "25%": 37.5,
+                        "50%": 50.0,
+                        "75%": 50.0,
+                        "max": 50.0
                     }
                 }
             },
@@ -1803,110 +1711,149 @@
             }
         },
         {
-            "filename": "algorithm_comparison.csv",
+            "filename": "all_attack_results.csv",
             "category": "attacks",
             "algorithm": "RESULTADOS_GLOBALES",
-            "rows": 4,
+            "rows": 69,
             "columns": [
+                "attack_id",
+                "timestamp",
                 "algoritmo",
-                "average_time",
-                "average_attempts",
-                "average_attempts_per_second",
-                "success_rate",
-                "average_search_space",
-                "average_key_size",
-                "average_password_length",
-                "average_plaintext_length",
-                "average_ciphertext_length"
+                "attack_type",
+                "target_id",
+                "original_text",
+                "target_value",
+                "recovered_text",
+                "attack_successful",
+                "error_message",
+                "execution_time",
+                "attack_time_seconds",
+                "attempts",
+                "throughput",
+                "attempts_per_second",
+                "key_size_bits",
+                "password_length",
+                "alphabet_size",
+                "search_space",
+                "log2_search_space",
+                "plaintext_length",
+                "ciphertext_length",
+                "hash_length"
             ],
             "schema": {
+                "attack_id": "string",
+                "timestamp": "string",
                 "algoritmo": "string",
-                "average_time": "float",
-                "average_attempts": "float",
-                "average_attempts_per_second": "float",
-                "success_rate": "float",
-                "average_search_space": "float",
-                "average_key_size": "float",
-                "average_password_length": "bool",
-                "average_plaintext_length": "float",
-                "average_ciphertext_length": "float"
+                "attack_type": "string",
+                "target_id": "string",
+                "original_text": "float",
+                "target_value": "string",
+                "recovered_text": "float",
+                "attack_successful": "bool",
+                "error_message": "string",
+                "execution_time": "float",
+                "attack_time_seconds": "float",
+                "attempts": "float",
+                "throughput": "float",
+                "attempts_per_second": "float",
+                "key_size_bits": "float",
+                "password_length": "bool",
+                "alphabet_size": "bool",
+                "search_space": "float",
+                "log2_search_space": "float",
+                "plaintext_length": "float",
+                "ciphertext_length": "float",
+                "hash_length": "float"
             },
             "summary": {
                 "nulls": {
+                    "attack_id": 0,
+                    "timestamp": 0,
                     "algoritmo": 0,
-                    "average_time": 0,
-                    "average_attempts": 0,
-                    "average_attempts_per_second": 0,
-                    "success_rate": 0,
-                    "average_search_space": 0,
-                    "average_key_size": 0,
-                    "average_password_length": 4,
-                    "average_plaintext_length": 0,
-                    "average_ciphertext_length": 0
+                    "attack_type": 0,
+                    "target_id": 0,
+                    "original_text": 0,
+                    "target_value": 0,
+                    "recovered_text": 39,
+                    "attack_successful": 0,
+                    "error_message": 30,
+                    "execution_time": 0,
+                    "attack_time_seconds": 0,
+                    "attempts": 0,
+                    "throughput": 0,
+                    "attempts_per_second": 0,
+                    "key_size_bits": 0,
+                    "password_length": 69,
+                    "alphabet_size": 69,
+                    "search_space": 0,
+                    "log2_search_space": 0,
+                    "plaintext_length": 0,
+                    "ciphertext_length": 0,
+                    "hash_length": 29
                 },
                 "duplicates": 0,
                 "numeric_stats": {
-                    "average_time": {
-                        "count": 4.0,
-                        "mean": 44.5915607743793,
-                        "std": 78.4637828664805,
-                        "min": 0.9078728093041314,
-                        "25%": 5.847426268789503,
-                        "50%": 7.6336936155955,
-                        "75%": 46.3778281211853,
-                        "max": 162.1909830570221
+                    "execution_time": {
+                        "count": 69.0,
+                        "mean": 35.68689399525739,
+                        "std": 75.66737586626644,
+                        "min": 1.9073486328125e-06,
+                        "25%": 7.486343383789062e-05,
+                        "50%": 2.1676831245422363,
+                        "75%": 19.328380346298218,
+                        "max": 261.06670022010803
                     },
-                    "average_attempts": {
-                        "count": 4.0,
-                        "mean": 9961393.0,
-                        "std": 3285744.0502296854,
-                        "min": 6375287.666666667,
-                        "25%": 8766031.916666666,
-                        "50%": 9562946.666666666,
-                        "75%": 10758307.75,
-                        "max": 14344391.0
+                    "attack_time_seconds": {
+                        "count": 69.0,
+                        "mean": 35.68689399525739,
+                        "std": 75.66737586626644,
+                        "min": 1.9073486328125e-06,
+                        "25%": 7.486343383789062e-05,
+                        "50%": 2.1676831245422363,
+                        "75%": 19.328380346298218,
+                        "max": 261.06670022010803
                     },
-                    "average_attempts_per_second": {
-                        "count": 4.0,
-                        "mean": 1761317.4301777948,
-                        "std": 1875233.5484531068,
-                        "min": 88582.79515686081,
-                        "25%": 949973.6220603336,
-                        "50%": 1252884.1499330415,
-                        "75%": 2064227.9580505025,
-                        "max": 4450918.625688235
-                    },
-                    "success_rate": {
-                        "count": 4.0,
-                        "mean": 30.555555555555554,
-                        "std": 22.906142364542557,
-                        "min": 0.0,
-                        "25%": 24.999999999999996,
-                        "50%": 33.33333333333333,
-                        "75%": 38.888888888888886,
-                        "max": 55.55555555555556
-                    },
-                    "average_search_space": {
-                        "count": 4.0,
-                        "mean": 14344391.0,
-                        "std": 0.0,
-                        "min": 14344391.0,
-                        "25%": 14344391.0,
+                    "attempts": {
+                        "count": 69.0,
+                        "mean": 8107717.942028985,
+                        "std": 7162996.566980676,
+                        "min": 1.0,
+                        "25%": 59.0,
                         "50%": 14344391.0,
                         "75%": 14344391.0,
                         "max": 14344391.0
                     },
-                    "average_key_size": {
-                        "count": 4.0,
-                        "mean": 672.0,
-                        "std": 919.3156875270504,
+                    "throughput": {
+                        "count": 69.0,
+                        "mean": 1421062.1643507497,
+                        "std": 1807747.559840848,
+                        "min": 54945.31086464147,
+                        "25%": 661896.4792768892,
+                        "50%": 808540.530120482,
+                        "75%": 1031386.2295081968,
+                        "max": 6720721.981606153
+                    },
+                    "attempts_per_second": {
+                        "count": 69.0,
+                        "mean": 1421062.1643507497,
+                        "std": 1807747.559840848,
+                        "min": 54945.31086464147,
+                        "25%": 661896.4792768892,
+                        "50%": 808540.530120482,
+                        "75%": 1031386.2295081968,
+                        "max": 6720721.981606153
+                    },
+                    "key_size_bits": {
+                        "count": 69.0,
+                        "mean": 738.3188405797101,
+                        "std": 844.5446822845472,
                         "min": 128.0,
-                        "25%": 224.0,
+                        "25%": 128.0,
                         "50%": 256.0,
-                        "75%": 704.0,
+                        "75%": 2048.0,
                         "max": 2048.0
                     },
-                    "average_password_length": {
+                    "password_length": {
                         "count": 0.0,
                         "mean": null,
                         "std": null,
@@ -1916,53 +1863,106 @@
                         "75%": null,
                         "max": null
                     },
-                    "average_plaintext_length": {
-                        "count": 4.0,
-                        "mean": 9.194444444444445,
-                        "std": 0.5619996631664262,
-                        "min": 8.555555555555555,
-                        "25%": 8.805555555555555,
-                        "50%": 9.277777777777779,
-                        "75%": 9.666666666666666,
-                        "max": 9.666666666666666
+                    "alphabet_size": {
+                        "count": 0.0,
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "25%": null,
+                        "50%": null,
+                        "75%": null,
+                        "max": null
                     },
-                    "average_ciphertext_length": {
-                        "count": 4.0,
-                        "mean": 156.27777777777777,
-                        "std": 237.9536473172978,
-                        "min": 17.11111111111111,
-                        "25%": 28.27777777777778,
-                        "50%": 48.0,
-                        "75%": 176.0,
+                    "search_space": {
+                        "count": 69.0,
+                        "mean": 14344391.0,
+                        "std": 0.0,
+                        "min": 14344391.0,
+                        "25%": 14344391.0,
+                        "50%": 14344391.0,
+                        "75%": 14344391.0,
+                        "max": 14344391.0
+                    },
+                    "log2_search_space": {
+                        "count": 69.0,
+                        "mean": 23.773983383107208,
+                        "std": 1.789370616597944e-14,
+                        "min": 23.77398338310721,
+                        "25%": 23.77398338310721,
+                        "50%": 23.77398338310721,
+                        "75%": 23.77398338310721,
+                        "max": 23.77398338310721
+                    },
+                    "plaintext_length": {
+                        "count": 69.0,
+                        "mean": 9.115942028985508,
+                        "std": 3.1461284886631975,
+                        "min": 5.0,
+                        "25%": 7.0,
+                        "50%": 8.0,
+                        "75%": 11.0,
+                        "max": 16.0
+                    },
+                    "ciphertext_length": {
+                        "count": 69.0,
+                        "mean": 178.46376811594203,
+                        "std": 215.2531054438926,
+                        "min": 10.0,
+                        "25%": 32.0,
+                        "50%": 64.0,
+                        "75%": 512.0,
                         "max": 512.0
+                    },
+                    "hash_length": {
+                        "count": 40.0,
+                        "mean": 48.0,
+                        "std": 16.203829873338666,
+                        "min": 32.0,
+                        "25%": 32.0,
+                        "50%": 48.0,
+                        "75%": 64.0,
+                        "max": 64.0
                     }
                 }
             },
             "quality": {
                 "null_ratio_per_column": {
+                    "attack_id": 0.0,
+                    "timestamp": 0.0,
                     "algoritmo": 0.0,
-                    "average_time": 0.0,
-                    "average_attempts": 0.0,
-                    "average_attempts_per_second": 0.0,
-                    "success_rate": 0.0,
-                    "average_search_space": 0.0,
-                    "average_key_size": 0.0,
-                    "average_password_length": 1.0,
-                    "average_plaintext_length": 0.0,
-                    "average_ciphertext_length": 0.0
+                    "attack_type": 0.0,
+                    "target_id": 0.0,
+                    "original_text": 0.0,
+                    "target_value": 0.0,
+                    "recovered_text": 0.5652173913043478,
+                    "attack_successful": 0.0,
+                    "error_message": 0.43478260869565216,
+                    "execution_time": 0.0,
+                    "attack_time_seconds": 0.0,
+                    "attempts": 0.0,
+                    "throughput": 0.0,
+                    "attempts_per_second": 0.0,
+                    "key_size_bits": 0.0,
+                    "password_length": 1.0,
+                    "alphabet_size": 1.0,
+                    "search_space": 0.0,
+                    "log2_search_space": 0.0,
+                    "plaintext_length": 0.0,
+                    "ciphertext_length": 0.0,
+                    "hash_length": 0.42028985507246375
                 },
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
-                "columns_count": 10,
-                "rows_count": 4,
-                "memory_bytes": 632
+                "columns_count": 23,
+                "rows_count": 69,
+                "memory_bytes": 59039
             }
         },
         {
             "filename": "probabilistic_dataset.csv",
             "category": "attacks",
             "algorithm": "RESULTADOS_GLOBALES",
-            "rows": 36,
+            "rows": 69,
             "columns": [
                 "algoritmo",
                 "attack_successful",
@@ -2003,95 +2003,95 @@
                     "key_size_bits": 0,
                     "plaintext_length": 0,
                     "ciphertext_length": 0,
-                    "hash_length": 18,
+                    "hash_length": 29,
                     "search_space": 0
                 },
                 "duplicates": 0,
                 "numeric_stats": {
                     "execution_time": {
-                        "count": 36.0,
-                        "mean": 44.5915607743793,
-                        "std": 69.11224578842412,
-                        "min": 4.76837158203125e-07,
-                        "25%": 7.331371307373047e-05,
-                        "50%": 10.813582062721252,
-                        "75%": 48.95130181312561,
-                        "max": 180.483779668808
+                        "count": 69.0,
+                        "mean": 35.68689399525739,
+                        "std": 75.66737586626644,
+                        "min": 1.9073486328125e-06,
+                        "25%": 7.486343383789062e-05,
+                        "50%": 2.1676831245422363,
+                        "75%": 19.328380346298218,
+                        "max": 261.06670022010803
                     },
                     "attack_time_seconds": {
-                        "count": 36.0,
-                        "mean": 44.5915607743793,
-                        "std": 69.11224578842412,
-                        "min": 4.76837158203125e-07,
-                        "25%": 7.331371307373047e-05,
-                        "50%": 10.813582062721252,
-                        "75%": 48.95130181312561,
-                        "max": 180.483779668808
+                        "count": 69.0,
+                        "mean": 35.68689399525739,
+                        "std": 75.66737586626644,
+                        "min": 1.9073486328125e-06,
+                        "25%": 7.486343383789062e-05,
+                        "50%": 2.1676831245422363,
+                        "75%": 19.328380346298218,
+                        "max": 261.06670022010803
                     },
                     "attempts": {
-                        "count": 36.0,
-                        "mean": 9961393.0,
-                        "std": 6701347.8623560965,
+                        "count": 69.0,
+                        "mean": 8107717.942028985,
+                        "std": 7162996.566980676,
                         "min": 1.0,
-                        "25%": 83.0,
+                        "25%": 59.0,
                         "50%": 14344391.0,
                         "75%": 14344391.0,
                         "max": 14344391.0
                     },
                     "throughput": {
-                        "count": 36.0,
-                        "mean": 1761317.4301777948,
-                        "std": 2408911.4178356645,
-                        "min": 79477.45235789221,
-                        "25%": 721964.1108058759,
-                        "50%": 1239923.6774717304,
-                        "75%": 1350841.7746501134,
-                        "max": 11692703.664383631
+                        "count": 69.0,
+                        "mean": 1421062.1643507497,
+                        "std": 1807747.559840848,
+                        "min": 54945.31086464147,
+                        "25%": 661896.4792768892,
+                        "50%": 808540.530120482,
+                        "75%": 1031386.2295081968,
+                        "max": 6720721.981606153
                     },
                     "attempts_per_second": {
-                        "count": 36.0,
-                        "mean": 1761317.4301777948,
-                        "std": 2408911.4178356645,
-                        "min": 79477.45235789221,
-                        "25%": 721964.1108058759,
-                        "50%": 1239923.6774717304,
-                        "75%": 1350841.7746501134,
-                        "max": 11692703.664383631
+                        "count": 69.0,
+                        "mean": 1421062.1643507497,
+                        "std": 1807747.559840848,
+                        "min": 54945.31086464147,
+                        "25%": 661896.4792768892,
+                        "50%": 808540.530120482,
+                        "75%": 1031386.2295081968,
+                        "max": 6720721.981606153
                     },
                     "key_size_bits": {
-                        "count": 36.0,
-                        "mean": 672.0,
-                        "std": 807.4442218683415,
+                        "count": 69.0,
+                        "mean": 738.3188405797101,
+                        "std": 844.5446822845472,
                         "min": 128.0,
-                        "25%": 224.0,
+                        "25%": 128.0,
                         "50%": 256.0,
-                        "75%": 704.0,
+                        "75%": 2048.0,
                         "max": 2048.0
                     },
                     "plaintext_length": {
-                        "count": 36.0,
-                        "mean": 9.194444444444445,
-                        "std": 3.670885019364788,
+                        "count": 69.0,
+                        "mean": 9.115942028985508,
+                        "std": 3.1461284886631975,
                         "min": 5.0,
-                        "25%": 6.0,
+                        "25%": 7.0,
                         "50%": 8.0,
                         "75%": 11.0,
                         "max": 16.0
                     },
                     "ciphertext_length": {
-                        "count": 36.0,
-                        "mean": 156.27777777777777,
-                        "std": 209.02393726366924,
+                        "count": 69.0,
+                        "mean": 178.46376811594203,
+                        "std": 215.2531054438926,
                         "min": 10.0,
-                        "25%": 31.5,
-                        "50%": 48.0,
-                        "75%": 176.0,
+                        "25%": 32.0,
+                        "50%": 64.0,
+                        "75%": 512.0,
                         "max": 512.0
                     },
                     "hash_length": {
-                        "count": 18.0,
+                        "count": 40.0,
                         "mean": 48.0,
-                        "std": 16.46386417368085,
+                        "std": 16.203829873338666,
                         "min": 32.0,
                         "25%": 32.0,
                         "50%": 48.0,
@@ -2099,7 +2099,7 @@
                         "max": 64.0
                     },
                     "search_space": {
-                        "count": 36.0,
+                        "count": 69.0,
                         "mean": 14344391.0,
                         "std": 0.0,
                         "min": 14344391.0,
@@ -2122,21 +2122,163 @@
                     "key_size_bits": 0.0,
                     "plaintext_length": 0.0,
                     "ciphertext_length": 0.0,
-                    "hash_length": 0.5,
+                    "hash_length": 0.42028985507246375,
                     "search_space": 0.0
                 },
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
                 "columns_count": 12,
-                "rows_count": 36,
-                "memory_bytes": 4956
+                "rows_count": 69,
+                "memory_bytes": 9389
+            }
+        },
+        {
+            "filename": "matriz_covarianza.csv",
+            "category": "probabilities",
+            "algorithm": null,
+            "rows": 8,
+            "columns": [
+                "unnamed_0",
+                "execution_time",
+                "attack_time_seconds",
+                "attempts",
+                "attempts_per_second",
+                "key_size_bits",
+                "plaintext_length",
+                "ciphertext_length",
+                "search_space"
+            ],
+            "schema": {
+                "unnamed_0": "string",
+                "execution_time": "float",
+                "attack_time_seconds": "float",
+                "attempts": "float",
+                "attempts_per_second": "float",
+                "key_size_bits": "float",
+                "plaintext_length": "float",
+                "ciphertext_length": "float",
+                "search_space": "bool"
+            },
+            "summary": {
+                "nulls": {
+                    "unnamed_0": 0,
+                    "execution_time": 0,
+                    "attack_time_seconds": 0,
+                    "attempts": 0,
+                    "attempts_per_second": 0,
+                    "key_size_bits": 0,
+                    "plaintext_length": 0,
+                    "ciphertext_length": 0,
+                    "search_space": 0
+                },
+                "duplicates": 0,
+                "numeric_stats": {
+                    "execution_time": {
+                        "count": 8.0,
+                        "mean": 38488640.51524151,
+                        "std": 129744015.46568358,
+                        "min": -48876699.89716468,
+                        "25%": -7801.7403893505225,
+                        "50%": -6.560699284140254,
+                        "75%": 9628.957682744038,
+                        "max": 356786544.334546
+                    },
+                    "attack_time_seconds": {
+                        "count": 8.0,
+                        "mean": 38488640.51524151,
+                        "std": 129744015.46568358,
+                        "min": -48876699.89716468,
+                        "25%": -7801.7403893505225,
+                        "50%": -6.560699284140254,
+                        "75%": 9628.957682744038,
+                        "max": 356786544.334546
+                    },
+                    "attempts": {
+                        "count": 8.0,
+                        "mean": 5983237245160.211,
+                        "std": 16845831986842.021,
+                        "min": -418405260.2669557,
+                        "25%": -42768109.40364812,
+                        "50%": 184305279.6872241,
+                        "75%": 48154497370.829575,
+                        "max": 47674214412025.55
+                    },
+                    "attempts_per_second": {
+                        "count": 8.0,
+                        "mean": 227140722603.93115,
+                        "std": 568772238336.9977,
+                        "min": -48876699.89716468,
+                        "25%": -12219174.97429117,
+                        "50%": 73716350.76186585,
+                        "75%": 48297002024.910904,
+                        "max": 1624981678929.629
+                    },
+                    "key_size_bits": {
+                        "count": 8.0,
+                        "mean": 16098446.471384175,
+                        "std": 259662450.52786785,
+                        "min": -418405260.2669557,
+                        "25%": -14344.18334561434,
+                        "50%": 6.002678989534514,
+                        "75%": 151159.6539820017,
+                        "max": 546792749.7763194
+                    },
+                    "plaintext_length": {
+                        "count": 8.0,
+                        "mean": 1569330.8624361404,
+                        "std": 4151398.0984936473,
+                        "min": -13.121398568280508,
+                        "25%": -3.280349642070127,
+                        "50%": 11.213385101115524,
+                        "75%": 182666.48210294722,
+                        "max": 11824015.039902143
+                    },
+                    "ciphertext_length": {
+                        "count": 8.0,
+                        "mean": -3033816.016884101,
+                        "std": 85116437.46539608,
+                        "min": -171072437.6145925,
+                        "25%": -5620.926070595917,
+                        "50%": 7.56319946855818,
+                        "75%": 39321.42483764513,
+                        "max": 146702080.97451672
+                    },
+                    "search_space": {
+                        "count": 8.0,
+                        "mean": 0.0,
+                        "std": 0.0,
+                        "min": 0.0,
+                        "25%": 0.0,
+                        "50%": 0.0,
+                        "75%": 0.0,
+                        "max": 0.0
+                    }
+                }
+            },
+            "quality": {
+                "null_ratio_per_column": {
+                    "unnamed_0": 0.0,
+                    "execution_time": 0.0,
+                    "attack_time_seconds": 0.0,
+                    "attempts": 0.0,
+                    "attempts_per_second": 0.0,
+                    "key_size_bits": 0.0,
+                    "plaintext_length": 0.0,
+                    "ciphertext_length": 0.0,
+                    "search_space": 0.0
+                },
+                "empty_rows_fraction": 0.0,
+                "duplicate_rows": 0,
+                "columns_count": 9,
+                "rows_count": 8,
+                "memory_bytes": 1154
             }
         },
         {
             "filename": "integrated_analysis_df.csv",
             "category": "probabilities",
             "algorithm": null,
-            "rows": 1899,
+            "rows": 3320,
             "columns": [
                 "algorithm",
                 "categoria",
@@ -2203,14 +2345,14 @@
             },
             "summary": {
                 "nulls": {
-                    "algorithm": 9,
-                    "categoria": 9,
-                    "origin": 9,
+                    "algorithm": 20,
+                    "categoria": 20,
+                    "origin": 20,
                     "data_size_bytes": 0,
                     "execution_time_crypto": 0,
                     "throughput_crypto": 0,
                     "key_size_bits": 0,
-                    "hash_length_crypto": 1899,
+                    "hash_length_crypto": 3320,
                     "attack_id": 0,
                     "timestamp": 0,
                     "algoritmo": 0,
@@ -2218,15 +2360,15 @@
                     "target_id": 0,
                     "original_text": 0,
                     "target_value": 0,
-                    "recovered_text": 1511,
+                    "recovered_text": 2110,
                     "attack_successful": 0,
-                    "error_message": 388,
+                    "error_message": 1210,
                     "execution_time_attack": 0,
                     "attack_time_seconds": 0,
                     "attempts": 0,
                     "throughput_attack": 0,
                     "attempts_per_second": 0,
-                    "password_length": 1899,
+                    "password_length": 3320,
                     "search_space": 0,
                     "log2_search_space": 0,
                     "plaintext_length": 0,
@@ -2237,9 +2379,9 @@
                 "duplicates": 0,
                 "numeric_stats": {
                     "data_size_bytes": {
-                        "count": 1899.0,
-                        "mean": 9.270142180094787,
-                        "std": 3.0248720515322343,
+                        "count": 3320.0,
+                        "mean": 9.180722891566266,
+                        "std": 2.9798745585633024,
                         "min": 5.0,
                         "25%": 7.0,
                         "50%": 8.0,
@@ -2247,29 +2389,29 @@
                         "max": 16.0
                     },
                     "execution_time_crypto": {
-                        "count": 1899.0,
-                        "mean": 7.403406124300338e-06,
-                        "std": 1.9420457114477303e-05,
-                        "min": 1.3699999925620432e-06,
-                        "25%": 1.549000003819856e-06,
-                        "50%": 1.7799999909584583e-06,
-                        "75%": 2.449999996656516e-06,
-                        "max": 0.000162124633789
+                        "count": 3320.0,
+                        "mean": 1.059480628884727e-05,
+                        "std": 2.0960860014498624e-05,
+                        "min": 2.757000004294241e-06,
+                        "25%": 2.96399997523622e-06,
+                        "50%": 3.160999995088787e-06,
+                        "75%": 3.552999999101303e-06,
+                        "max": 0.0001401901245117
                     },
                     "throughput_crypto": {
-                        "count": 1899.0,
-                        "mean": 4483163.293009965,
-                        "std": 2244202.714112671,
-                        "min": 61680.94117647059,
-                        "25%": 3333333.320696073,
-                        "50%": 4285714.279133627,
-                        "75%": 5844155.845967992,
-                        "max": 10062893.103569826
+                        "count": 3320.0,
+                        "mean": 2530672.4762959685,
+                        "std": 1291055.1532704441,
+                        "min": 71331.70068027212,
+                        "25%": 1865671.652305208,
+                        "50%": 2594033.7110101976,
+                        "75%": 3344481.6226967294,
+                        "max": 5304101.852999783
                     },
                     "key_size_bits": {
-                        "count": 1899.0,
-                        "mean": 425.25118483412325,
-                        "std": 525.3210625404205,
+                        "count": 3320.0,
+                        "mean": 471.13253012048193,
+                        "std": 583.7967339754491,
                         "min": 128.0,
                         "25%": 256.0,
                         "50%": 256.0,
@@ -2287,54 +2429,54 @@
                         "max": null
                     },
                     "execution_time_attack": {
-                        "count": 1899.0,
-                        "mean": 76.52132217139555,
-                        "std": 77.78726329864091,
-                        "min": 4.76837158203125e-07,
-                        "25%": 10.744149208068848,
-                        "50%": 13.099644660949709,
-                        "75%": 160.60486125946045,
-                        "max": 180.483779668808
+                        "count": 3320.0,
+                        "mean": 68.22607005755586,
+                        "std": 98.12725249768253,
+                        "min": 1.9073486328125e-06,
+                        "25%": 0.0001173019409179,
+                        "50%": 19.37621569633484,
+                        "75%": 220.95088839530945,
+                        "max": 261.06670022010803
                     },
                     "attack_time_seconds": {
-                        "count": 1899.0,
-                        "mean": 76.52132217139555,
-                        "std": 77.78726329864091,
-                        "min": 4.76837158203125e-07,
-                        "25%": 10.744149208068848,
-                        "50%": 13.099644660949709,
-                        "75%": 160.60486125946045,
-                        "max": 180.483779668808
+                        "count": 3320.0,
+                        "mean": 68.22607005755586,
+                        "std": 98.12725249768253,
+                        "min": 1.9073486328125e-06,
+                        "25%": 0.0001173019409179,
+                        "50%": 19.37621569633484,
+                        "75%": 220.95088839530945,
+                        "max": 261.06670022010803
                     },
                     "attempts": {
-                        "count": 1899.0,
-                        "mean": 11413581.887835704,
-                        "std": 5785198.711841121,
+                        "count": 3320.0,
+                        "mean": 9116484.465963855,
+                        "std": 6904651.650302604,
                         "min": 1.0,
-                        "25%": 14344391.0,
+                        "25%": 75.0,
                         "50%": 14344391.0,
                         "75%": 14344391.0,
                         "max": 14344391.0
                     },
                     "throughput_attack": {
-                        "count": 1899.0,
-                        "mean": 1038833.9343963546,
-                        "std": 1636628.0952402593,
-                        "min": 79477.45235789221,
-                        "25%": 89315.01970350722,
-                        "50%": 1095021.381973887,
-                        "75%": 1330156.579092111,
-                        "max": 11692703.664383631
+                        "count": 3320.0,
+                        "mean": 849799.2397430814,
+                        "std": 1274747.6922629157,
+                        "min": 54945.31086464147,
+                        "25%": 64921.17367881339,
+                        "50%": 699061.266337676,
+                        "75%": 787618.1719457014,
+                        "max": 6720721.981606153
                     },
                     "attempts_per_second": {
-                        "count": 1899.0,
-                        "mean": 1038833.9343963546,
-                        "std": 1636628.0952402593,
-                        "min": 79477.45235789221,
-                        "25%": 89315.01970350722,
-                        "50%": 1095021.381973887,
-                        "75%": 1330156.579092111,
-                        "max": 11692703.664383631
+                        "count": 3320.0,
+                        "mean": 849799.2397430814,
+                        "std": 1274747.6922629157,
+                        "min": 54945.31086464147,
+                        "25%": 64921.17367881339,
+                        "50%": 699061.266337676,
+                        "75%": 787618.1719457014,
+                        "max": 6720721.981606153
                     },
                     "password_length": {
                         "count": 0.0,
@@ -2347,7 +2489,7 @@
                         "max": null
                     },
                     "search_space": {
-                        "count": 1899.0,
+                        "count": 3320.0,
                         "mean": 14344391.0,
                         "std": 0.0,
                         "min": 14344391.0,
@@ -2357,9 +2499,9 @@
                         "max": 14344391.0
                     },
                     "log2_search_space": {
-                        "count": 1899.0,
-                        "mean": 23.77398338310722,
-                        "std": 1.8478977219964146e-13,
+                        "count": 3320.0,
+                        "mean": 23.773983383107215,
+                        "std": 1.0446551610005766e-12,
                         "min": 23.77398338310721,
                         "25%": 23.77398338310721,
                         "50%": 23.77398338310721,
@@ -2367,9 +2509,9 @@
                         "max": 23.77398338310721
                     },
                     "plaintext_length": {
-                        "count": 1899.0,
-                        "mean": 9.092680358083202,
-                        "std": 3.605382366830502,
+                        "count": 3320.0,
+                        "mean": 9.043674698795181,
+                        "std": 3.228221216577654,
                         "min": 5.0,
                         "25%": 6.0,
                         "50%": 8.0,
@@ -2377,19 +2519,19 @@
                         "max": 16.0
                     },
                     "ciphertext_length": {
-                        "count": 1899.0,
-                        "mean": 85.2016850974197,
-                        "std": 139.9973915055195,
+                        "count": 3320.0,
+                        "mean": 105.07228915662651,
+                        "std": 152.0369504517971,
                         "min": 10.0,
-                        "25%": 14.0,
+                        "25%": 30.0,
                         "50%": 64.0,
                         "75%": 64.0,
                         "max": 512.0
                     },
                     "hash_length_attack": {
-                        "count": 1899.0,
-                        "mean": 63.84834123222749,
-                        "std": 2.198323227623396,
+                        "count": 3320.0,
+                        "mean": 63.80722891566265,
+                        "std": 2.4765624171123415,
                         "min": 32.0,
                         "25%": 64.0,
                         "50%": 64.0,
@@ -2397,22 +2539,22 @@
                         "max": 64.0
                     },
                     "execution_time": {
-                        "count": 1899.0,
-                        "mean": 76.52132217139555,
-                        "std": 77.78726329864091,
-                        "min": 4.76837158203125e-07,
-                        "25%": 10.744149208068848,
-                        "50%": 13.099644660949709,
-                        "75%": 160.60486125946045,
-                        "max": 180.483779668808
+                        "count": 3320.0,
+                        "mean": 68.22607005755586,
+                        "std": 98.12725249768253,
+                        "min": 1.9073486328125e-06,
+                        "25%": 0.0001173019409179,
+                        "50%": 19.37621569633484,
+                        "75%": 220.95088839530945,
+                        "max": 261.06670022010803
                     }
                 }
             },
             "quality": {
                 "null_ratio_per_column": {
-                    "algorithm": 0.004739336492890996,
-                    "categoria": 0.004739336492890996,
-                    "origin": 0.004739336492890996,
+                    "algorithm": 0.006024096385542169,
+                    "categoria": 0.006024096385542169,
+                    "origin": 0.006024096385542169,
                     "data_size_bytes": 0.0,
                     "execution_time_crypto": 0.0,
                     "throughput_crypto": 0.0,
@@ -2425,9 +2567,9 @@
                     "target_id": 0.0,
                     "original_text": 0.0,
                     "target_value": 0.0,
-                    "recovered_text": 0.7956819378620327,
+                    "recovered_text": 0.6355421686746988,
                     "attack_successful": 0.0,
-                    "error_message": 0.20431806213796735,
+                    "error_message": 0.3644578313253012,
                     "execution_time_attack": 0.0,
                     "attack_time_seconds": 0.0,
                     "attempts": 0.0,
@@ -2444,150 +2586,8 @@
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
                 "columns_count": 30,
-                "rows_count": 1899,
-                "memory_bytes": 1926105
-            }
-        },
-        {
-            "filename": "matriz_covarianza.csv",
-            "category": "probabilities",
-            "algorithm": null,
-            "rows": 8,
-            "columns": [
-                "unnamed_0",
-                "execution_time",
-                "attack_time_seconds",
-                "attempts",
-                "attempts_per_second",
-                "key_size_bits",
-                "plaintext_length",
-                "ciphertext_length",
-                "search_space"
-            ],
-            "schema": {
-                "unnamed_0": "string",
-                "execution_time": "float",
-                "attack_time_seconds": "float",
-                "attempts": "float",
-                "attempts_per_second": "float",
-                "key_size_bits": "float",
-                "plaintext_length": "float",
-                "ciphertext_length": "float",
-                "search_space": "bool"
-            },
-            "summary": {
-                "nulls": {
-                    "unnamed_0": 0,
-                    "execution_time": 0,
-                    "attack_time_seconds": 0,
-                    "attempts": 0,
-                    "attempts_per_second": 0,
-                    "key_size_bits": 0,
-                    "plaintext_length": 0,
-                    "ciphertext_length": 0,
-                    "search_space": 0
-                },
-                "duplicates": 0,
-                "numeric_stats": {
-                    "execution_time": {
-                        "count": 8.0,
-                        "mean": 19533306.3200731,
-                        "std": 86136940.88860305,
-                        "min": -68115233.28989199,
-                        "25%": -6964.4852218451915,
-                        "50%": -16.470675435954565,
-                        "75%": 6050.858331492139,
-                        "max": 224387440.105924
-                    },
-                    "attack_time_seconds": {
-                        "count": 8.0,
-                        "mean": 19533306.3200731,
-                        "std": 86136940.88860305,
-                        "min": -68115233.28989199,
-                        "25%": -6964.4852218451915,
-                        "50%": -16.470675435954565,
-                        "75%": 6050.858331492139,
-                        "max": 224387440.105924
-                    },
-                    "attempts": {
-                        "count": 8.0,
-                        "mean": 4059311624833.4053,
-                        "std": 11888198127781.719,
-                        "min": -993358596881.9548,
-                        "25%": -420544501.22228897,
-                        "50%": 4746028.669057148,
-                        "75%": 224387440.105924,
-                        "max": 33468524135488.656
-                    },
-                    "attempts_per_second": {
-                        "count": 8.0,
-                        "mean": 210725304759.9274,
-                        "std": 1056013981157.3177,
-                        "min": -993358596881.9548,
-                        "25%": -68115233.28989199,
-                        "50%": 488271.6366488638,
-                        "75%": 268697924.19198847,
-                        "max": 2678551522129.7603
-                    },
-                    "key_size_bits": {
-                        "count": 8.0,
-                        "mean": -34380519.18372462,
-                        "std": 388751005.6637299,
-                        "min": -855121313.0692824,
-                        "25%": -12808.57569525554,
-                        "50%": -17.491098137725402,
-                        "75%": 123414.6930418149,
-                        "max": 579754283.9965174
-                    },
-                    "plaintext_length": {
-                        "count": 8.0,
-                        "mean": 1308565.6471993716,
-                        "std": 3324240.7694764906,
-                        "min": -34.982196275450804,
-                        "25%": -32.94135087190913,
-                        "50%": 6.21614947915019,
-                        "75%": 244145.56741094016,
-                        "max": 9492057.338114295
-                    },
-                    "ciphertext_length": {
-                        "count": 8.0,
-                        "mean": -13823868.588317525,
-                        "std": 120536216.65796638,
-                        "min": -275685563.9399578,
-                        "25%": -5016.455064041742,
-                        "50%": 6.21614947915019,
-                        "75%": 32840.83167281763,
-                        "max": 165012470.92381215
-                    },
-                    "search_space": {
-                        "count": 8.0,
-                        "mean": 0.0,
-                        "std": 0.0,
-                        "min": 0.0,
-                        "25%": 0.0,
-                        "50%": 0.0,
-                        "75%": 0.0,
-                        "max": 0.0
-                    }
-                }
-            },
-            "quality": {
-                "null_ratio_per_column": {
-                    "unnamed_0": 0.0,
-                    "execution_time": 0.0,
-                    "attack_time_seconds": 0.0,
-                    "attempts": 0.0,
-                    "attempts_per_second": 0.0,
-                    "key_size_bits": 0.0,
-                    "plaintext_length": 0.0,
-                    "ciphertext_length": 0.0,
-                    "search_space": 0.0
-                },
-                "empty_rows_fraction": 0.0,
-                "duplicate_rows": 0,
-                "columns_count": 9,
-                "rows_count": 8,
-                "memory_bytes": 1154
+                "rows_count": 3320,
+                "memory_bytes": 3417344
             }
         },
         {
@@ -2651,133 +2651,133 @@
                 "numeric_stats": {
                     "m_nimo": {
                         "count": 24.0,
-                        "mean": 2480014.086989119,
-                        "std": 5427715.190506596,
-                        "min": 4.76837158203125e-07,
+                        "mean": 2427992.737067292,
+                        "std": 5445052.309552239,
+                        "min": 1.9073486328125e-06,
                         "25%": 5.0,
-                        "50%": 142.25313663482666,
-                        "75%": 292624.97815730807,
+                        "50%": 174.47544419765472,
+                        "75%": 136534.07405757203,
                         "max": 14344391.0
                     },
                     "m_ximo": {
                         "count": 24.0,
-                        "mean": 4132788.201648025,
-                        "std": 6471189.6555120535,
-                        "min": 3.018014907836914,
-                        "25%": 16.0,
-                        "50%": 218.241889834404,
-                        "75%": 12355625.498287722,
+                        "mean": 3911958.479358867,
+                        "std": 6302254.049662658,
+                        "min": 7.383464097976685,
+                        "25%": 19.109745502471924,
+                        "50%": 261.06670022010803,
+                        "75%": 8626639.236204615,
                         "max": 14344391.0
                     },
                     "rango": {
                         "count": 24.0,
-                        "mean": 1652774.114658906,
-                        "std": 4480856.018018551,
+                        "mean": 1483965.742291575,
+                        "std": 4166074.2387260715,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 10.5,
-                        "75%": 23.97750639915469,
+                        "50%": 10.0,
+                        "75%": 40.11581182479858,
                         "max": 14344390.0
                     },
                     "media": {
                         "count": 24.0,
-                        "mean": 3295656.9007788957,
-                        "std": 5578752.014145328,
-                        "min": 0.9078728093041314,
-                        "25%": 9.472222222222221,
-                        "50%": 209.09549152851105,
-                        "75%": 4932010.885932843,
+                        "mean": 3165196.7895798013,
+                        "std": 5507125.273392812,
+                        "min": 1.5954958081245425,
+                        "25%": 9.2125,
+                        "50%": 242.10095083713531,
+                        "75%": 4329113.104646422,
                         "max": 14344391.0
                     },
                     "mediana": {
                         "count": 24.0,
-                        "mean": 3140783.041832723,
-                        "std": 5894064.9614456445,
-                        "min": 5.7220458984375e-06,
-                        "25%": 11.136192500591278,
-                        "50%": 160.85697627067566,
-                        "75%": 1508136.3899046923,
+                        "mean": 3121972.488739153,
+                        "std": 5508833.121958303,
+                        "min": 1.0671803951263428,
+                        "25%": 8.351084351539612,
+                        "50%": 240.5476062297821,
+                        "75%": 3513790.227564103,
                         "max": 14344391.0
                     },
                     "moda": {
                         "count": 24.0,
-                        "mean": 3723924.0638412884,
-                        "std": 6281176.675205742,
-                        "min": 4.291534423828125e-06,
-                        "25%": 6.75,
-                        "50%": 206.25313663482666,
-                        "75%": 5158961.75,
+                        "mean": 3623358.3204007247,
+                        "std": 6323987.942662971,
+                        "min": 3.0994415283203125e-06,
+                        "25%": 7.75,
+                        "50%": 238.47544419765472,
+                        "75%": 3927014.0849753693,
                         "max": 14344391.0
                     },
                     "varianza": {
                         "count": 24.0,
-                        "mean": 4775068263642.391,
-                        "std": 14528241545233.668,
+                        "mean": 4634916574635.115,
+                        "std": 14899558172929.531,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 10.875966896206812,
-                        "75%": 45.63898709662221,
-                        "max": 51439972303999.25
+                        "50%": 9.066869992928162,
+                        "75%": 138.7153853568397,
+                        "max": 54147311333635.5
                     },
                     "desviaci_n_est_ndar": {
                         "count": 24.0,
-                        "mean": 743933.2037260659,
-                        "std": 2098852.2707181433,
+                        "mean": 710503.259171429,
+                        "std": 2075974.7908351014,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 3.2978642366646955,
-                        "75%": 6.755663335056167,
-                        "max": 7172166.500019311
+                        "50%": 2.995091642943471,
+                        "75%": 11.777749587966271,
+                        "max": 7358485.668507855
                     },
                     "coeficiente_de_variaci_n": {
                         "count": 24.0,
-                        "mean": 34.69119096914914,
-                        "std": 43.057008387521485,
+                        "mean": 37.634749698311616,
+                        "std": 45.98415099518425,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 4.3876433119530525,
-                        "75%": 75.00524314901958,
-                        "max": 121.98524787150308
+                        "50%": 12.993309223828302,
+                        "75%": 77.01975977250507,
+                        "max": 123.40603589867848
                     },
                     "q1_25_percentil": {
                         "count": 24.0,
-                        "mean": 2532673.2987592537,
-                        "std": 5417314.6904417565,
-                        "min": 4.291534423828125e-06,
-                        "25%": 6.0,
-                        "50%": 143.0472787618637,
-                        "75%": 370793.3235298536,
+                        "mean": 2479108.294648869,
+                        "std": 5428535.557486256,
+                        "min": 3.0994415283203125e-06,
+                        "25%": 6.5625,
+                        "50%": 175.06475710868835,
+                        "75%": 240446.55005326294,
                         "max": 14344391.0
                     },
                     "q2_50_percentil": {
                         "count": 24.0,
-                        "mean": 3140783.041832723,
-                        "std": 5894064.9614456445,
-                        "min": 5.7220458984375e-06,
-                        "25%": 11.136192500591278,
-                        "50%": 160.85697627067566,
-                        "75%": 1508136.3899046923,
+                        "mean": 3121972.488739153,
+                        "std": 5508833.121958303,
+                        "min": 1.0671803951263428,
+                        "25%": 8.351084351539612,
+                        "50%": 240.5476062297821,
+                        "75%": 3513790.227564103,
                         "max": 14344391.0
                     },
                     "q3_75_percentil": {
                         "count": 24.0,
-                        "mean": 3919364.0586775797,
-                        "std": 6296019.931744912,
-                        "min": 1.769521713256836,
-                        "25%": 11.90981274843216,
-                        "50%": 208.97207844257355,
-                        "75%": 8574822.859791184,
+                        "mean": 3898485.350195177,
+                        "std": 6302607.227170843,
+                        "min": 2.17382949590683,
+                        "25%": 16.959086775779724,
+                        "50%": 241.154226064682,
+                        "75%": 8507391.552273428,
                         "max": 14344391.0
                     },
                     "i_q_r": {
                         "count": 24.0,
-                        "mean": 1386690.7599183258,
-                        "std": 4097267.9765281305,
+                        "mean": 1419377.055546308,
+                        "std": 4123365.607001708,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 3.8495993614196777,
-                        "75%": 11.729374408721924,
-                        "max": 14344387.0
+                        "50%": 3.7144689559936523,
+                        "75%": 16.959010124206543,
+                        "max": 14344385.25
                     }
                 }
             },
@@ -2807,10 +2807,110 @@
             }
         },
         {
+            "filename": "probabilidades.csv",
+            "category": "probabilities",
+            "algorithm": null,
+            "rows": 3,
+            "columns": [
+                "algoritmo",
+                "total_ataques",
+                "ataques_exitosos",
+                "ataques_fallidos",
+                "p_xito",
+                "p_fracaso"
+            ],
+            "schema": {
+                "algoritmo": "string",
+                "total_ataques": "float",
+                "ataques_exitosos": "float",
+                "ataques_fallidos": "float",
+                "p_xito": "float",
+                "p_fracaso": "float"
+            },
+            "summary": {
+                "nulls": {
+                    "algoritmo": 0,
+                    "total_ataques": 0,
+                    "ataques_exitosos": 0,
+                    "ataques_fallidos": 0,
+                    "p_xito": 0,
+                    "p_fracaso": 0
+                },
+                "duplicates": 0,
+                "numeric_stats": {
+                    "total_ataques": {
+                        "count": 3.0,
+                        "mean": 440.0,
+                        "std": 441.36152981427824,
+                        "min": 20.0,
+                        "25%": 210.0,
+                        "50%": 400.0,
+                        "75%": 650.0,
+                        "max": 900.0
+                    },
+                    "ataques_exitosos": {
+                        "count": 3.0,
+                        "mean": 70.0,
+                        "std": 112.69427669584645,
+                        "min": 0.0,
+                        "25%": 5.0,
+                        "50%": 10.0,
+                        "75%": 105.0,
+                        "max": 200.0
+                    },
+                    "ataques_fallidos": {
+                        "count": 3.0,
+                        "mean": 370.0,
+                        "std": 468.7216658103186,
+                        "min": 10.0,
+                        "25%": 105.0,
+                        "50%": 200.0,
+                        "75%": 550.0,
+                        "max": 900.0
+                    },
+                    "p_xito": {
+                        "count": 3.0,
+                        "mean": 0.3333333333333333,
+                        "std": 0.2886751345948129,
+                        "min": 0.0,
+                        "25%": 0.25,
+                        "50%": 0.5,
+                        "75%": 0.5,
+                        "max": 0.5
+                    },
+                    "p_fracaso": {
+                        "count": 3.0,
+                        "mean": 0.6666666666666666,
+                        "std": 0.28867513459481287,
+                        "min": 0.5,
+                        "25%": 0.5,
+                        "50%": 0.5,
+                        "75%": 0.75,
+                        "max": 1.0
+                    }
+                }
+            },
+            "quality": {
+                "null_ratio_per_column": {
+                    "algoritmo": 0.0,
+                    "total_ataques": 0.0,
+                    "ataques_exitosos": 0.0,
+                    "ataques_fallidos": 0.0,
+                    "p_xito": 0.0,
+                    "p_fracaso": 0.0
+                },
+                "empty_rows_fraction": 0.0,
+                "duplicate_rows": 0,
+                "columns_count": 6,
+                "rows_count": 3,
+                "memory_bytes": 408
+            }
+        },
+        {
             "filename": "analisis_combinatorio.csv",
             "category": "probabilities",
             "algorithm": null,
-            "rows": 9,
+            "rows": 11,
             "columns": [
                 "algoritmo",
                 "par_metro",
@@ -2836,23 +2936,23 @@
                 "duplicates": 0,
                 "numeric_stats": {
                     "valor_del_par_metro": {
-                        "count": 9.0,
-                        "mean": 263.22222222222223,
-                        "std": 674.2541764382661,
-                        "min": 5.0,
-                        "25%": 8.0,
-                        "50%": 10.0,
-                        "75%": 16.0,
+                        "count": 11.0,
+                        "mean": 218.27272727272728,
+                        "std": 611.3028857954281,
+                        "min": 6.0,
+                        "25%": 8.5,
+                        "50%": 12.0,
+                        "75%": 15.5,
                         "max": 2048.0
                     },
                     "espacio_de_b_squeda_te_rico": {
-                        "count": 9.0,
+                        "count": 11.0,
                         "mean": null,
                         "std": null,
-                        "min": 7737809375.0,
-                        "25%": 6634204312890625.0,
-                        "50%": 5.9873693923837895e+19,
-                        "75%": 4.401266686517657e+31,
+                        "min": 735091890625.0,
+                        "25%": 3.1844180701875e+17,
+                        "50%": 5.40360087662637e+23,
+                        "75%": 2.223797904766816e+31,
                         "max": null
                     }
                 }
@@ -2868,8 +2968,8 @@
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
                 "columns_count": 5,
-                "rows_count": 9,
-                "memory_bytes": 2160
+                "rows_count": 11,
+                "memory_bytes": 2606
             }
         },
         {
@@ -2927,91 +3027,91 @@
                 "numeric_stats": {
                     "lineal_r2": {
                         "count": 9.0,
-                        "mean": 0.7205889302574877,
-                        "std": 0.32226651670030015,
-                        "min": 0.0564974449928223,
-                        "25%": 0.537313582665888,
-                        "50%": 0.7192660872803618,
+                        "mean": 0.6567466145776598,
+                        "std": 0.38113088432939124,
+                        "min": 0.0015857892640097,
+                        "25%": 0.5020862456139799,
+                        "50%": 0.6259843015578473,
                         "75%": 1.0,
                         "max": 1.0
                     },
                     "lineal_r_m_s_e": {
                         "count": 9.0,
-                        "mean": 930687.9379860113,
-                        "std": 1858198.5387922649,
+                        "mean": 1061000.6558831995,
+                        "std": 2110217.6822595648,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 0.654759210081327,
-                        "75%": 6.558211476814079,
-                        "max": 4599572.588172694
+                        "50%": 1.7886907089965698,
+                        "75%": 11.761867547158062,
+                        "max": 5060914.662333551
                     },
                     "exponencial_r2": {
                         "count": 9.0,
-                        "mean": 0.20324665398021238,
-                        "std": 0.2305103583535974,
+                        "mean": 0.1610793041847051,
+                        "std": 0.2178670429484802,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 0.0564990565995977,
-                        "75%": 0.406310581417463,
-                        "max": 0.5057674570629314
+                        "50%": 0.0015714995484593,
+                        "75%": 0.3707165489455523,
+                        "max": 0.4872172382946216
                     },
                     "exponencial_r_m_s_e": {
                         "count": 9.0,
-                        "mean": 1135683.8490198862,
-                        "std": 2254099.871469707,
-                        "min": 0.0130877361380664,
-                        "25%": 0.016134998919459,
-                        "50%": 0.8076634402790069,
-                        "75%": 6.558205875736208,
-                        "max": 5210192.340153043
+                        "mean": 1209940.036138583,
+                        "std": 2404012.5018675853,
+                        "min": 0.0015267632878347,
+                        "25%": 0.0575403222821645,
+                        "50%": 1.849056615153312,
+                        "75%": 11.761951717204122,
+                        "max": 5689513.181588237
                     },
                     "logaritmico_r2": {
                         "count": 9.0,
-                        "mean": 0.31674150587095823,
-                        "std": 0.3648337015016612,
+                        "mean": 0.2341183126741555,
+                        "std": 0.30874391074321555,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 0.0521368228670167,
-                        "75%": 0.6783678224492651,
-                        "max": 0.7715549501818261
+                        "50%": 3.59342806421914e-06,
+                        "75%": 0.5356321868646661,
+                        "max": 0.6880940010024448
                     },
                     "logaritmico_r_m_s_e": {
                         "count": 9.0,
-                        "mean": 804633.1556137848,
-                        "std": 1600224.6034178634,
-                        "min": 0.0092964478658018,
-                        "25%": 0.0106487295371554,
-                        "50%": 0.621083426446949,
-                        "75%": 6.573349175739538,
-                        "max": 3834898.2666830528
+                        "mean": 1000008.8968939582,
+                        "std": 1993758.8212284932,
+                        "min": 0.0068462606482191,
+                        "25%": 0.0095762333800464,
+                        "50%": 1.745476909633302,
+                        "75%": 11.771183425678895,
+                        "max": 4887457.65191018
                     },
                     "polinomico_r2": {
                         "count": 9.0,
-                        "mean": 0.8191193252952726,
-                        "std": 0.30280451749850873,
-                        "min": 0.0565026522973433,
-                        "25%": 0.8195449868058768,
-                        "50%": 0.8948574742739646,
+                        "mean": 0.7118860599890208,
+                        "std": 0.34643553734008875,
+                        "min": 0.0666618018402097,
+                        "25%": 0.5625540789124182,
+                        "50%": 0.7568975755311909,
                         "75%": 1.0,
                         "max": 1.0
                     },
                     "polinomico_r_m_s_e": {
                         "count": 9.0,
-                        "mean": 580056.7262436475,
-                        "std": 1169800.055326835,
+                        "mean": 932665.0868869344,
+                        "std": 1870771.8494920717,
                         "min": 0.0,
                         "25%": 0.0,
-                        "50%": 0.5895716823578269,
-                        "75%": 6.558193379008614,
-                        "max": 3027881.8699875325
+                        "50%": 1.6687310591906737,
+                        "75%": 11.372093654378896,
+                        "max": 4743666.385904599
                     },
                     "mejor_r2": {
                         "count": 9.0,
-                        "mean": 0.8191193252952726,
-                        "std": 0.30280451749850873,
-                        "min": 0.0565026522973433,
-                        "25%": 0.8195449868058768,
-                        "50%": 0.8948574742739646,
+                        "mean": 0.7118860599890208,
+                        "std": 0.34643553734008875,
+                        "min": 0.0666618018402097,
+                        "25%": 0.5625540789124182,
+                        "50%": 0.7568975755311909,
                         "75%": 1.0,
                         "max": 1.0
                     }
@@ -3038,266 +3138,6 @@
                 "columns_count": 13,
                 "rows_count": 9,
                 "memory_bytes": 3031
-            }
-        },
-        {
-            "filename": "distribuciones_estadisticas.csv",
-            "category": "probabilities",
-            "algorithm": null,
-            "rows": 24,
-            "columns": [
-                "algoritmo",
-                "variable",
-                "n",
-                "shapiro_stat",
-                "shapiro_p_value",
-                "k_s_stat",
-                "k_s_p_value",
-                "a_d_stat"
-            ],
-            "schema": {
-                "algoritmo": "string",
-                "variable": "string",
-                "n": "float",
-                "shapiro_stat": "float",
-                "shapiro_p_value": "float",
-                "k_s_stat": "float",
-                "k_s_p_value": "float",
-                "a_d_stat": "float"
-            },
-            "summary": {
-                "nulls": {
-                    "algoritmo": 0,
-                    "variable": 0,
-                    "n": 0,
-                    "shapiro_stat": 0,
-                    "shapiro_p_value": 0,
-                    "k_s_stat": 14,
-                    "k_s_p_value": 14,
-                    "a_d_stat": 9
-                },
-                "duplicates": 0,
-                "numeric_stats": {
-                    "n": {
-                        "count": 24.0,
-                        "mean": 348.0,
-                        "std": 373.09236529776143,
-                        "min": 9.0,
-                        "25%": 9.0,
-                        "50%": 180.0,
-                        "75%": 855.0,
-                        "max": 855.0
-                    },
-                    "shapiro_stat": {
-                        "count": 24.0,
-                        "mean": 0.8361061567991189,
-                        "std": 0.1567504493901212,
-                        "min": 0.6172786191813191,
-                        "25%": 0.6524163047088304,
-                        "50%": 0.8443262873636943,
-                        "75%": 1.0,
-                        "max": 1.0
-                    },
-                    "shapiro_p_value": {
-                        "count": 24.0,
-                        "mean": 0.4161756532239412,
-                        "std": 0.49003590553766163,
-                        "min": 1.942443528942757e-39,
-                        "25%": 4.0514909611394866e-16,
-                        "50%": 0.0002689090019225,
-                        "75%": 1.0,
-                        "max": 1.0
-                    },
-                    "k_s_stat": {
-                        "count": 10.0,
-                        "mean": 0.33208452441665903,
-                        "std": 0.06513934510592473,
-                        "min": 0.1620372031152602,
-                        "25%": 0.3477018601080335,
-                        "50%": 0.3493808228266998,
-                        "75%": 0.36661665144215205,
-                        "max": 0.3760441516127816
-                    },
-                    "k_s_p_value": {
-                        "count": 10.0,
-                        "mean": 1.3476544680353176e-05,
-                        "std": 4.2616576106374e-05,
-                        "min": 4.2029283796818573e-109,
-                        "25%": 1.7957277499321689e-93,
-                        "50%": 7.774795686495082e-23,
-                        "75%": 3.820374881135986e-20,
-                        "max": 0.000134765446597
-                    },
-                    "a_d_stat": {
-                        "count": 15.0,
-                        "mean": 41.25947447674293,
-                        "std": 48.56401551258876,
-                        "min": 0.2867508846193107,
-                        "25%": 1.6539590867904987,
-                        "50%": 19.080821934163453,
-                        "75%": 81.25207730621128,
-                        "max": 124.4659516846392
-                    }
-                }
-            },
-            "quality": {
-                "null_ratio_per_column": {
-                    "algoritmo": 0.0,
-                    "variable": 0.0,
-                    "n": 0.0,
-                    "shapiro_stat": 0.0,
-                    "shapiro_p_value": 0.0,
-                    "k_s_stat": 0.5833333333333334,
-                    "k_s_p_value": 0.5833333333333334,
-                    "a_d_stat": 0.375
-                },
-                "empty_rows_fraction": 0.0,
-                "duplicate_rows": 0,
-                "columns_count": 8,
-                "rows_count": 24,
-                "memory_bytes": 4062
-            }
-        },
-        {
-            "filename": "correlacion_pearson.csv",
-            "category": "probabilities",
-            "algorithm": null,
-            "rows": 8,
-            "columns": [
-                "unnamed_0",
-                "execution_time",
-                "attack_time_seconds",
-                "attempts",
-                "attempts_per_second",
-                "key_size_bits",
-                "plaintext_length",
-                "ciphertext_length",
-                "search_space"
-            ],
-            "schema": {
-                "unnamed_0": "string",
-                "execution_time": "float",
-                "attack_time_seconds": "float",
-                "attempts": "float",
-                "attempts_per_second": "float",
-                "key_size_bits": "float",
-                "plaintext_length": "float",
-                "ciphertext_length": "float",
-                "search_space": "bool"
-            },
-            "summary": {
-                "nulls": {
-                    "unnamed_0": 0,
-                    "execution_time": 1,
-                    "attack_time_seconds": 1,
-                    "attempts": 1,
-                    "attempts_per_second": 1,
-                    "key_size_bits": 1,
-                    "plaintext_length": 1,
-                    "ciphertext_length": 1,
-                    "search_space": 8
-                },
-                "duplicates": 0,
-                "numeric_stats": {
-                    "execution_time": {
-                        "count": 7.0,
-                        "mean": 0.15314693575870292,
-                        "std": 0.6701935441352377,
-                        "min": -0.5350393867985058,
-                        "25%": -0.38704836126043624,
-                        "50%": -0.117457724245975,
-                        "75%": 0.7493111919381368,
-                        "max": 1.0
-                    },
-                    "attack_time_seconds": {
-                        "count": 7.0,
-                        "mean": 0.15314693575870292,
-                        "std": 0.6701935441352377,
-                        "min": -0.5350393867985058,
-                        "25%": -0.38704836126043624,
-                        "50%": -0.117457724245975,
-                        "75%": 0.7493111919381368,
-                        "max": 1.0
-                    },
-                    "attempts": {
-                        "count": 7.0,
-                        "mean": 0.2465213144120848,
-                        "std": 0.49749095076325617,
-                        "min": -0.3403892222816856,
-                        "25%": -0.19314474009089289,
-                        "50%": 0.4550831355955178,
-                        "75%": 0.4986223838762736,
-                        "max": 1.0
-                    },
-                    "attempts_per_second": {
-                        "count": 7.0,
-                        "mean": 0.19785965463937258,
-                        "std": 0.6205210974574199,
-                        "min": -0.5350393867985058,
-                        "25%": -0.31997721594304573,
-                        "50%": 0.165497013183208,
-                        "75%": 0.6972571939884986,
-                        "max": 1.0
-                    },
-                    "key_size_bits": {
-                        "count": 7.0,
-                        "mean": 0.24775460414817804,
-                        "std": 0.6157150531783323,
-                        "min": -0.313449464844573,
-                        "25%": -0.2974119499693866,
-                        "50%": -0.0184701714914166,
-                        "75%": 0.8305128826560045,
-                        "max": 1.0
-                    },
-                    "plaintext_length": {
-                        "count": 7.0,
-                        "mean": 0.19883220322125325,
-                        "std": 0.40544022751888437,
-                        "min": -0.117457724245975,
-                        "25%": -0.0679639478686958,
-                        "50%": 0.0246308937534135,
-                        "75%": 0.3102900743893629,
-                        "max": 1.0
-                    },
-                    "ciphertext_length": {
-                        "count": 7.0,
-                        "mean": 0.20997680766032634,
-                        "std": 0.6738549818832495,
-                        "min": -0.4606472576762995,
-                        "25%": -0.40051823997899255,
-                        "50%": 0.0246308937534135,
-                        "75%": 0.8534452487515777,
-                        "max": 1.0
-                    },
-                    "search_space": {
-                        "count": 0.0,
-                        "mean": null,
-                        "std": null,
-                        "min": null,
-                        "25%": null,
-                        "50%": null,
-                        "75%": null,
-                        "max": null
-                    }
-                }
-            },
-            "quality": {
-                "null_ratio_per_column": {
-                    "unnamed_0": 0.0,
-                    "execution_time": 0.125,
-                    "attack_time_seconds": 0.125,
-                    "attempts": 0.125,
-                    "attempts_per_second": 0.125,
-                    "key_size_bits": 0.125,
-                    "plaintext_length": 0.125,
-                    "ciphertext_length": 0.125,
-                    "search_space": 1.0
-                },
-                "empty_rows_fraction": 0.0,
-                "duplicate_rows": 0,
-                "columns_count": 9,
-                "rows_count": 8,
-                "memory_bytes": 1154
             }
         },
         {
@@ -3343,72 +3183,72 @@
                 "numeric_stats": {
                     "execution_time": {
                         "count": 7.0,
-                        "mean": 0.07118779136418195,
-                        "std": 0.840272018630725,
-                        "min": -0.9035407459496074,
-                        "25%": -0.6507326185700506,
-                        "50%": -0.0016086054143953,
-                        "75%": 0.8524645640266888,
+                        "mean": 0.17637131729304967,
+                        "std": 0.8105188110522435,
+                        "min": -0.821057358836964,
+                        "25%": -0.5465365980623604,
+                        "50%": 0.3008488674866321,
+                        "75%": 0.9239404542632003,
                         "max": 1.0
                     },
                     "attack_time_seconds": {
                         "count": 7.0,
-                        "mean": 0.07118779136418195,
-                        "std": 0.840272018630725,
-                        "min": -0.9035407459496074,
-                        "25%": -0.6507326185700506,
-                        "50%": -0.0016086054143953,
-                        "75%": 0.8524645640266888,
+                        "mean": 0.17637131729304967,
+                        "std": 0.8105188110522435,
+                        "min": -0.821057358836964,
+                        "25%": -0.5465365980623604,
+                        "50%": 0.3008488674866321,
+                        "75%": 0.9239404542632003,
                         "max": 1.0
                     },
                     "attempts": {
                         "count": 7.0,
-                        "mean": 0.2473206380698149,
-                        "std": 0.6252387013559901,
-                        "min": -0.4752777107720883,
-                        "25%": -0.367202128939047,
-                        "50%": 0.5310681790321311,
-                        "75%": 0.7049291280533777,
+                        "mean": 0.30124009955058045,
+                        "std": 0.6457210193757313,
+                        "min": -0.4493500445814786,
+                        "25%": -0.32359959525686816,
+                        "50%": 0.5094681148964766,
+                        "75%": 0.8478809085264005,
                         "max": 1.0
                     },
                     "attempts_per_second": {
                         "count": 7.0,
-                        "mean": 0.04766110394175871,
-                        "std": 0.7961282590406672,
-                        "min": -0.9035407459496074,
-                        "25%": -0.6522007899964324,
-                        "50%": 0.2245592016068384,
-                        "75%": 0.6585054259639722,
+                        "mean": 0.03236575516767209,
+                        "std": 0.7542491357384938,
+                        "min": -0.821057358836964,
+                        "25%": -0.6352037017092212,
+                        "50%": 0.0421649178663631,
+                        "75%": 0.6379300652813741,
                         "max": 1.0
                     },
                     "key_size_bits": {
                         "count": 7.0,
-                        "mean": 0.11073796630676602,
-                        "std": 0.5513724036955298,
-                        "min": -0.4145156857360826,
-                        "25%": -0.37402955478545974,
-                        "50%": -0.0112330229539614,
-                        "75%": 0.47448679120416276,
+                        "mean": 0.18023236060053524,
+                        "std": 0.5304089932127195,
+                        "min": -0.3484954650772867,
+                        "25%": -0.27663130408674497,
+                        "50%": 0.0550926057720935,
+                        "75%": 0.5541459958412149,
                         "max": 1.0
                     },
                     "plaintext_length": {
                         "count": 7.0,
-                        "mean": 0.2891633183544707,
-                        "std": 0.371338442307489,
-                        "min": -0.0112330229539614,
-                        "25%": -0.0016086054143953,
-                        "50%": 0.2245592016068384,
-                        "75%": 0.40701713032860415,
+                        "mean": 0.3476185031602767,
+                        "std": 0.3291664541560775,
+                        "min": 0.0421649178663631,
+                        "25%": 0.1399993771929164,
+                        "50%": 0.3008488674866321,
+                        "75%": 0.40515849119155434,
                         "max": 1.0
                     },
                     "ciphertext_length": {
                         "count": 7.0,
-                        "mean": 0.06383173066166359,
-                        "std": 0.8079658531303493,
-                        "min": -0.8869495514040187,
-                        "25%": -0.6811136310880535,
-                        "50%": 0.2829660816250772,
-                        "75%": 0.7065164232933467,
+                        "mean": 0.1046714328335887,
+                        "std": 0.7448016581646684,
+                        "min": -0.7445777310474341,
+                        "25%": -0.5935048892324836,
+                        "50%": 0.2249061486137393,
+                        "75%": 0.7196906953668915,
                         "max": 1.0
                     },
                     "search_space": {
@@ -3440,6 +3280,374 @@
                 "columns_count": 9,
                 "rows_count": 8,
                 "memory_bytes": 1154
+            }
+        },
+        {
+            "filename": "correlacion_pearson.csv",
+            "category": "probabilities",
+            "algorithm": null,
+            "rows": 8,
+            "columns": [
+                "unnamed_0",
+                "execution_time",
+                "attack_time_seconds",
+                "attempts",
+                "attempts_per_second",
+                "key_size_bits",
+                "plaintext_length",
+                "ciphertext_length",
+                "search_space"
+            ],
+            "schema": {
+                "unnamed_0": "string",
+                "execution_time": "float",
+                "attack_time_seconds": "float",
+                "attempts": "float",
+                "attempts_per_second": "float",
+                "key_size_bits": "float",
+                "plaintext_length": "float",
+                "ciphertext_length": "float",
+                "search_space": "bool"
+            },
+            "summary": {
+                "nulls": {
+                    "unnamed_0": 0,
+                    "execution_time": 1,
+                    "attack_time_seconds": 1,
+                    "attempts": 1,
+                    "attempts_per_second": 1,
+                    "key_size_bits": 1,
+                    "plaintext_length": 1,
+                    "ciphertext_length": 1,
+                    "search_space": 8
+                },
+                "duplicates": 0,
+                "numeric_stats": {
+                    "execution_time": {
+                        "count": 7.0,
+                        "mean": 0.20961079526216658,
+                        "std": 0.623001837502899,
+                        "min": -0.3907401165139371,
+                        "25%": -0.3135790392035458,
+                        "50%": -0.0414216315333829,
+                        "75%": 0.7632976966447889,
+                        "max": 1.0
+                    },
+                    "attack_time_seconds": {
+                        "count": 7.0,
+                        "mean": 0.20961079526216658,
+                        "std": 0.623001837502899,
+                        "min": -0.3907401165139371,
+                        "25%": -0.3135790392035458,
+                        "50%": -0.0414216315333829,
+                        "75%": 0.7632976966447889,
+                        "max": 1.0
+                    },
+                    "attempts": {
+                        "count": 7.0,
+                        "mean": 0.33409430007435736,
+                        "std": 0.4267072503581607,
+                        "min": -0.1629630412833681,
+                        "25%": -0.04101826376535624,
+                        "50%": 0.5265953932895776,
+                        "75%": 0.5285321380225022,
+                        "max": 1.0
+                    },
+                    "attempts_per_second": {
+                        "count": 7.0,
+                        "mean": 0.2727876508485894,
+                        "std": 0.5670496592205544,
+                        "min": -0.3907401165139371,
+                        "25%": -0.18448875836461906,
+                        "50%": 0.1775433299027262,
+                        "75%": 0.7458439296402873,
+                        "max": 1.0
+                    },
+                    "key_size_bits": {
+                        "count": 7.0,
+                        "mean": 0.3039005771400217,
+                        "std": 0.5789659028942,
+                        "min": -0.2503943514883177,
+                        "25%": -0.1770967394018646,
+                        "50%": 0.006370157437849,
+                        "75%": 0.8627608564171751,
+                        "max": 1.0
+                    },
+                    "plaintext_length": {
+                        "count": 7.0,
+                        "mean": 0.23747977590319383,
+                        "std": 0.39212333829144524,
+                        "min": -0.0414216315333829,
+                        "25%": -0.01752573704776695,
+                        "50%": 0.0308193242931205,
+                        "75%": 0.3540061063290765,
+                        "max": 1.0
+                    },
+                    "ciphertext_length": {
+                        "count": 7.0,
+                        "mean": 0.26600681170051943,
+                        "std": 0.6285818639273738,
+                        "min": -0.3767637269187739,
+                        "25%": -0.269863384101071,
+                        "50%": 0.0308193242931205,
+                        "75%": 0.8738594263657158,
+                        "max": 1.0
+                    },
+                    "search_space": {
+                        "count": 0.0,
+                        "mean": null,
+                        "std": null,
+                        "min": null,
+                        "25%": null,
+                        "50%": null,
+                        "75%": null,
+                        "max": null
+                    }
+                }
+            },
+            "quality": {
+                "null_ratio_per_column": {
+                    "unnamed_0": 0.0,
+                    "execution_time": 0.125,
+                    "attack_time_seconds": 0.125,
+                    "attempts": 0.125,
+                    "attempts_per_second": 0.125,
+                    "key_size_bits": 0.125,
+                    "plaintext_length": 0.125,
+                    "ciphertext_length": 0.125,
+                    "search_space": 1.0
+                },
+                "empty_rows_fraction": 0.0,
+                "duplicate_rows": 0,
+                "columns_count": 9,
+                "rows_count": 8,
+                "memory_bytes": 1154
+            }
+        },
+        {
+            "filename": "distribuciones_estadisticas.csv",
+            "category": "probabilities",
+            "algorithm": null,
+            "rows": 24,
+            "columns": [
+                "algoritmo",
+                "variable",
+                "n",
+                "shapiro_stat",
+                "shapiro_p_value",
+                "k_s_stat",
+                "k_s_p_value",
+                "a_d_stat"
+            ],
+            "schema": {
+                "algoritmo": "string",
+                "variable": "string",
+                "n": "float",
+                "shapiro_stat": "float",
+                "shapiro_p_value": "float",
+                "k_s_stat": "float",
+                "k_s_p_value": "float",
+                "a_d_stat": "float"
+            },
+            "summary": {
+                "nulls": {
+                    "algoritmo": 0,
+                    "variable": 0,
+                    "n": 0,
+                    "shapiro_stat": 0,
+                    "shapiro_p_value": 0,
+                    "k_s_stat": 14,
+                    "k_s_p_value": 14,
+                    "a_d_stat": 9
+                },
+                "duplicates": 0,
+                "numeric_stats": {
+                    "n": {
+                        "count": 24.0,
+                        "mean": 440.0,
+                        "std": 368.12096310623343,
+                        "min": 20.0,
+                        "25%": 20.0,
+                        "50%": 400.0,
+                        "75%": 900.0,
+                        "max": 900.0
+                    },
+                    "shapiro_stat": {
+                        "count": 24.0,
+                        "mean": 0.8231931766754071,
+                        "std": 0.17374839571295098,
+                        "min": 0.507537936618434,
+                        "25%": 0.680178760870529,
+                        "50%": 0.8392183727549765,
+                        "75%": 1.0,
+                        "max": 1.0
+                    },
+                    "shapiro_p_value": {
+                        "count": 24.0,
+                        "mean": 0.37575259124238136,
+                        "std": 0.4939471647391469,
+                        "min": 2.6447760306144273e-44,
+                        "25%": 1.2178164001892791e-23,
+                        "50%": 2.256725914317595e-05,
+                        "75%": 1.0,
+                        "max": 1.0
+                    },
+                    "k_s_stat": {
+                        "count": 10.0,
+                        "mean": 0.3394661555708181,
+                        "std": 0.08868565707132078,
+                        "min": 0.2089934660275733,
+                        "25%": 0.2911244491738315,
+                        "50%": 0.34437434198264866,
+                        "75%": 0.41670023059914063,
+                        "max": 0.4520812020330226
+                    },
+                    "k_s_p_value": {
+                        "count": 10.0,
+                        "mean": 8.415442018259416e-17,
+                        "std": 2.641262621024402e-16,
+                        "min": 1.7998845203675299e-168,
+                        "25%": 2.455110730805486e-98,
+                        "50%": 2.4920376823414838e-42,
+                        "75%": 1.5998778950010563e-30,
+                        "max": 8.35853709478755e-16
+                    },
+                    "a_d_stat": {
+                        "count": 15.0,
+                        "mean": 61.92515632450906,
+                        "std": 72.06909106729906,
+                        "min": 1.1213144086451692,
+                        "25%": 3.245796596963606,
+                        "50%": 33.88108305793878,
+                        "75%": 85.53246731978743,
+                        "max": 193.43955906842007
+                    }
+                }
+            },
+            "quality": {
+                "null_ratio_per_column": {
+                    "algoritmo": 0.0,
+                    "variable": 0.0,
+                    "n": 0.0,
+                    "shapiro_stat": 0.0,
+                    "shapiro_p_value": 0.0,
+                    "k_s_stat": 0.5833333333333334,
+                    "k_s_p_value": 0.5833333333333334,
+                    "a_d_stat": 0.375
+                },
+                "empty_rows_fraction": 0.0,
+                "duplicate_rows": 0,
+                "columns_count": 8,
+                "rows_count": 24,
+                "memory_bytes": 4062
+            }
+        },
+        {
+            "filename": "intervalos_confianza.csv",
+            "category": "probabilities",
+            "algorithm": null,
+            "rows": 24,
+            "columns": [
+                "algoritmo",
+                "m_trica",
+                "nivel_de_confianza",
+                "media",
+                "error_est_ndar",
+                "margen_de_error",
+                "i_c_inferior",
+                "i_c_superior"
+            ],
+            "schema": {
+                "algoritmo": "string",
+                "m_trica": "string",
+                "nivel_de_confianza": "string",
+                "media": "float",
+                "error_est_ndar": "float",
+                "margen_de_error": "float",
+                "i_c_inferior": "float",
+                "i_c_superior": "float"
+            },
+            "summary": {
+                "nulls": {
+                    "algoritmo": 0,
+                    "m_trica": 0,
+                    "nivel_de_confianza": 0,
+                    "media": 0,
+                    "error_est_ndar": 0,
+                    "margen_de_error": 0,
+                    "i_c_inferior": 0,
+                    "i_c_superior": 0
+                },
+                "duplicates": 0,
+                "numeric_stats": {
+                    "media": {
+                        "count": 24.0,
+                        "mean": 2689631.2305993703,
+                        "std": 5098964.751058079,
+                        "min": 0.5,
+                        "25%": 1.3216218560934068,
+                        "50%": 114.89869874119759,
+                        "75%": 1793220.7139262557,
+                        "max": 14344391.0
+                    },
+                    "error_est_ndar": {
+                        "count": 24.0,
+                        "mean": 44882.48258420095,
+                        "std": 121301.46533847813,
+                        "min": 0.0,
+                        "25%": 0.080085179865103,
+                        "50%": 0.1051251526808967,
+                        "75%": 0.392591652932209,
+                        "max": 359058.7417930899
+                    },
+                    "margen_de_error": {
+                        "count": 24.0,
+                        "mean": 92799.2597367677,
+                        "std": 255857.96275854955,
+                        "min": 0.0,
+                        "25%": 0.13782963071751791,
+                        "50%": 0.23696581189494836,
+                        "75%": 0.7705028393168535,
+                        "max": 929318.407816523
+                    },
+                    "i_c_inferior": {
+                        "count": 24.0,
+                        "mean": 2596831.970862603,
+                        "std": 5019639.356507643,
+                        "min": 0.2120135289414359,
+                        "25%": 1.1202407794406464,
+                        "50%": 114.31084472810605,
+                        "75%": 1560890.6271556835,
+                        "max": 14344391.0
+                    },
+                    "i_c_superior": {
+                        "count": 24.0,
+                        "mean": 2782430.4903361383,
+                        "std": 5189704.268056034,
+                        "min": 0.5411213406737868,
+                        "25%": 1.5153491714283849,
+                        "50%": 115.34931019644074,
+                        "75%": 1941214.8532405542,
+                        "max": 14344391.0
+                    }
+                }
+            },
+            "quality": {
+                "null_ratio_per_column": {
+                    "algoritmo": 0.0,
+                    "m_trica": 0.0,
+                    "nivel_de_confianza": 0.0,
+                    "media": 0.0,
+                    "error_est_ndar": 0.0,
+                    "margen_de_error": 0.0,
+                    "i_c_inferior": 0.0,
+                    "i_c_superior": 0.0
+                },
+                "empty_rows_fraction": 0.0,
+                "duplicate_rows": 0,
+                "columns_count": 8,
+                "rows_count": 24,
+                "memory_bytes": 5370
             }
         },
         {
@@ -3485,72 +3693,72 @@
                 "numeric_stats": {
                     "execution_time": {
                         "count": 7.0,
-                        "mean": 0.09455050956781637,
-                        "std": 0.7824131301154607,
-                        "min": -0.8325656477314556,
-                        "25%": -0.5425182455457519,
-                        "50%": -0.0326515459782606,
-                        "75%": 0.8060536258879671,
+                        "mean": 0.1978581175136906,
+                        "std": 0.7319345063078754,
+                        "min": -0.724521306959251,
+                        "25%": -0.42239856042844504,
+                        "50%": 0.2380204619444982,
+                        "75%": 0.8581523942337386,
                         "max": 1.0
                     },
                     "attack_time_seconds": {
                         "count": 7.0,
-                        "mean": 0.09455050956781637,
-                        "std": 0.7824131301154607,
-                        "min": -0.8325656477314556,
-                        "25%": -0.5425182455457519,
-                        "50%": -0.0326515459782606,
-                        "75%": 0.8060536258879671,
+                        "mean": 0.1978581175136906,
+                        "std": 0.7319345063078754,
+                        "min": -0.724521306959251,
+                        "25%": -0.42239856042844504,
+                        "50%": 0.2380204619444982,
+                        "75%": 0.8581523942337386,
                         "max": 1.0
                     },
                     "attempts": {
                         "count": 7.0,
-                        "mean": 0.227132677535108,
-                        "std": 0.5754579022305315,
-                        "min": -0.4251188828548972,
-                        "25%": -0.32894715235595823,
-                        "50%": 0.4487274267607005,
-                        "75%": 0.6121072517759346,
+                        "mean": 0.2712479620747917,
+                        "std": 0.5770607780543763,
+                        "min": -0.3931586212465284,
+                        "25%": -0.2743982520175535,
+                        "50%": 0.4080812828702225,
+                        "75%": 0.7163047884674771,
                         "max": 1.0
                     },
                     "attempts_per_second": {
                         "count": 7.0,
-                        "mean": 0.04006276542580862,
-                        "std": 0.7308255047983988,
-                        "min": -0.8325656477314556,
-                        "25%": -0.5856317761909493,
-                        "50%": 0.18456778712387,
-                        "75%": 0.5498503854850723,
+                        "mean": 0.03096680925003887,
+                        "std": 0.6719241885872045,
+                        "min": -0.724521306959251,
+                        "25%": -0.5429699961729573,
+                        "50%": 0.0193346392674948,
+                        "75%": 0.5039471623939715,
                         "max": 1.0
                     },
                     "key_size_bits": {
                         "count": 7.0,
-                        "mean": 0.11509784769734176,
-                        "std": 0.5154045163256112,
-                        "min": -0.3449817088428728,
-                        "25%": -0.33208905445217307,
-                        "50%": -0.0097373011884168,
-                        "75%": 0.412291026408514,
+                        "mean": 0.1805434344671338,
+                        "std": 0.495041193403755,
+                        "min": -0.2865952659550524,
+                        "25%": -0.23698654230174793,
+                        "50%": 0.0478056249896473,
+                        "75%": 0.4882833834194188,
                         "max": 1.0
                     },
                     "plaintext_length": {
                         "count": 7.0,
-                        "mean": 0.2603957207485841,
-                        "std": 0.372597955312506,
-                        "min": -0.0326515459782606,
-                        "25%": -0.0211944235833387,
-                        "50%": 0.18456778712387,
-                        "75%": 0.35662132563057825,
+                        "mean": 0.3061499673672691,
+                        "std": 0.3324617198803839,
+                        "min": 0.0193346392674948,
+                        "25%": 0.11979646277208525,
+                        "50%": 0.2380204619444982,
+                        "75%": 0.32305087240736036,
                         "max": 1.0
                     },
                     "ciphertext_length": {
                         "count": 7.0,
-                        "mean": 0.0819948641360935,
-                        "std": 0.7158398351651635,
-                        "min": -0.740054782248631,
-                        "25%": -0.582586832551764,
-                        "50%": 0.264515224500456,
-                        "75%": 0.6073386359021788,
+                        "mean": 0.1271994278542816,
+                        "std": 0.6366063870194756,
+                        "min": -0.5582018549018377,
+                        "25%": -0.475680238074183,
+                        "50%": 0.1917873005545232,
+                        "75%": 0.604085512737826,
                         "max": 1.0
                     },
                     "search_space": {
@@ -3585,114 +3793,6 @@
             }
         },
         {
-            "filename": "intervalos_confianza.csv",
-            "category": "probabilities",
-            "algorithm": null,
-            "rows": 21,
-            "columns": [
-                "algoritmo",
-                "m_trica",
-                "nivel_de_confianza",
-                "media",
-                "error_est_ndar",
-                "margen_de_error",
-                "i_c_inferior",
-                "i_c_superior"
-            ],
-            "schema": {
-                "algoritmo": "string",
-                "m_trica": "string",
-                "nivel_de_confianza": "string",
-                "media": "float",
-                "error_est_ndar": "float",
-                "margen_de_error": "float",
-                "i_c_inferior": "float",
-                "i_c_superior": "float"
-            },
-            "summary": {
-                "nulls": {
-                    "algoritmo": 0,
-                    "m_trica": 0,
-                    "nivel_de_confianza": 0,
-                    "media": 0,
-                    "error_est_ndar": 0,
-                    "margen_de_error": 0,
-                    "i_c_inferior": 0,
-                    "i_c_superior": 0
-                },
-                "duplicates": 0,
-                "numeric_stats": {
-                    "media": {
-                        "count": 21.0,
-                        "mean": 2960000.7742762784,
-                        "std": 5268889.075890197,
-                        "min": 0.5555555555555556,
-                        "25%": 0.9078728093041314,
-                        "50%": 162.1909830570221,
-                        "75%": 6375287.666666667,
-                        "max": 14344391.0
-                    },
-                    "error_est_ndar": {
-                        "count": 21.0,
-                        "mean": 76108.02246356604,
-                        "std": 191029.34242390198,
-                        "min": 0.0,
-                        "25%": 0.037037037037037,
-                        "50%": 0.0825460069439926,
-                        "75%": 0.2310388111914338,
-                        "max": 532755.493038289
-                    },
-                    "margen_de_error": {
-                        "count": 21.0,
-                        "mean": 158058.35317872118,
-                        "std": 404997.35923999205,
-                        "min": 0.0,
-                        "25%": 0.0954010853166259,
-                        "50%": 0.214914630230234,
-                        "75%": 0.453470431783651,
-                        "max": 1387068.3032207233
-                    },
-                    "i_c_inferior": {
-                        "count": 21.0,
-                        "mean": 2801942.421097559,
-                        "std": 5176060.941930434,
-                        "min": 0.4601544702389296,
-                        "25%": 0.7449843252599655,
-                        "50%": 161.59453360437325,
-                        "75%": 4988219.363445943,
-                        "max": 14344391.0
-                    },
-                    "i_c_superior": {
-                        "count": 21.0,
-                        "mean": 3118059.127455,
-                        "std": 5390623.622130846,
-                        "min": 0.6164760602574619,
-                        "25%": 1.0707612933482973,
-                        "50%": 162.57142077015973,
-                        "75%": 7256151.352680683,
-                        "max": 14344391.0
-                    }
-                }
-            },
-            "quality": {
-                "null_ratio_per_column": {
-                    "algoritmo": 0.0,
-                    "m_trica": 0.0,
-                    "nivel_de_confianza": 0.0,
-                    "media": 0.0,
-                    "error_est_ndar": 0.0,
-                    "margen_de_error": 0.0,
-                    "i_c_inferior": 0.0,
-                    "i_c_superior": 0.0
-                },
-                "empty_rows_fraction": 0.0,
-                "duplicate_rows": 0,
-                "columns_count": 8,
-                "rows_count": 21,
-                "memory_bytes": 4611
-            }
-        },
-        {
             "filename": "comparaciones_estadisticas.csv",
             "category": "probabilities",
             "algorithm": null,
@@ -3723,23 +3823,23 @@
                 "numeric_stats": {
                     "estad_stico": {
                         "count": 4.0,
-                        "mean": 480.92017212038957,
-                        "std": 26.687435752511497,
-                        "min": 467.5454607237437,
-                        "25%": 467.5454607237437,
-                        "50%": 467.5919780315463,
-                        "75%": 480.96668942819224,
-                        "max": 520.951271694722
+                        "mean": 780.656371868876,
+                        "std": 166.870942662766,
+                        "min": 530.3549936375381,
+                        "25%": 780.0950183591501,
+                        "50%": 863.3416932663541,
+                        "75%": 863.9030467760799,
+                        "max": 865.5871073052575
                     },
                     "p_valor": {
                         "count": 4.0,
-                        "mean": 2.19899503511522e-102,
-                        "std": 1.4673837994274649e-102,
-                        "min": 7.531278040923939e-114,
-                        "25%": 2.1313375561433933e-102,
-                        "50%": 2.909440887160507e-102,
-                        "75%": 2.9770983661323337e-102,
-                        "max": 2.9770983661323337e-102
+                        "mean": 1.7092926114646318e-116,
+                        "std": 3.4185852229292635e-116,
+                        "min": 1.096851529955742e-188,
+                        "25%": 2.8023147653868297e-188,
+                        "50%": 3.3708025105305256e-188,
+                        "75%": 1.7092926114646318e-116,
+                        "max": 6.837170445858527e-116
                     }
                 }
             },
@@ -3756,174 +3856,6 @@
                 "columns_count": 5,
                 "rows_count": 5,
                 "memory_bytes": 1217
-            }
-        },
-        {
-            "filename": "modelos_regresion.csv",
-            "category": "probabilities",
-            "algorithm": null,
-            "rows": 9,
-            "columns": [
-                "algoritmo",
-                "variable_dependiente",
-                "variable_independiente",
-                "lineal_r2",
-                "lineal_r_m_s_e",
-                "polinomico_r2",
-                "polinomico_r_m_s_e",
-                "exponencial_r2",
-                "exponencial_r_m_s_e",
-                "logaritmico_r2",
-                "logaritmico_r_m_s_e",
-                "mejor_modelo",
-                "mejor_r2"
-            ],
-            "schema": {
-                "algoritmo": "string",
-                "variable_dependiente": "string",
-                "variable_independiente": "string",
-                "lineal_r2": "float",
-                "lineal_r_m_s_e": "float",
-                "polinomico_r2": "float",
-                "polinomico_r_m_s_e": "float",
-                "exponencial_r2": "float",
-                "exponencial_r_m_s_e": "float",
-                "logaritmico_r2": "float",
-                "logaritmico_r_m_s_e": "float",
-                "mejor_modelo": "string",
-                "mejor_r2": "float"
-            },
-            "summary": {
-                "nulls": {
-                    "algoritmo": 0,
-                    "variable_dependiente": 0,
-                    "variable_independiente": 0,
-                    "lineal_r2": 0,
-                    "lineal_r_m_s_e": 0,
-                    "polinomico_r2": 0,
-                    "polinomico_r_m_s_e": 0,
-                    "exponencial_r2": 0,
-                    "exponencial_r_m_s_e": 0,
-                    "logaritmico_r2": 0,
-                    "logaritmico_r_m_s_e": 0,
-                    "mejor_modelo": 0,
-                    "mejor_r2": 0
-                },
-                "duplicates": 0,
-                "numeric_stats": {
-                    "lineal_r2": {
-                        "count": 9.0,
-                        "mean": 0.5237801194098367,
-                        "std": 0.302696739353509,
-                        "min": 0.0564974449928223,
-                        "25%": 0.5237173754003083,
-                        "50%": 0.537313582665888,
-                        "75%": 0.6485058819780095,
-                        "max": 1.0
-                    },
-                    "lineal_r_m_s_e": {
-                        "count": 9.0,
-                        "mean": 930689.1610437143,
-                        "std": 1858197.8496473106,
-                        "min": 0.0,
-                        "25%": 0.654759210081327,
-                        "50%": 3.794548640385037,
-                        "75%": 6.558211476814079,
-                        "max": 4599572.588172694
-                    },
-                    "polinomico_r2": {
-                        "count": 9.0,
-                        "mean": 0.6699717104705629,
-                        "std": 0.35918013173042324,
-                        "min": 0.0565026522973433,
-                        "25%": 0.715011023723964,
-                        "50%": 0.8195449868058768,
-                        "75%": 0.8861577905563051,
-                        "max": 1.0
-                    },
-                    "polinomico_r_m_s_e": {
-                        "count": 9.0,
-                        "mean": 580057.7265677247,
-                        "std": 1169799.4973057539,
-                        "min": 0.0,
-                        "25%": 0.5895716823578269,
-                        "50%": 1.8551516334118288,
-                        "75%": 6.558193379008614,
-                        "max": 3027881.8699875325
-                    },
-                    "exponencial_r2": {
-                        "count": 9.0,
-                        "mean": 0.30515130368482546,
-                        "std": 0.20456697401064142,
-                        "min": 0.0,
-                        "25%": 0.0564990565995977,
-                        "50%": 0.3954726907075468,
-                        "75%": 0.4651701000343726,
-                        "max": 0.5057674570629314
-                    },
-                    "exponencial_r_m_s_e": {
-                        "count": 9.0,
-                        "mean": 1135685.1366836494,
-                        "std": 2254099.1416113474,
-                        "min": 0.0130877361380664,
-                        "25%": 0.8076634402790069,
-                        "50%": 4.274996046902702,
-                        "75%": 6.558205875736208,
-                        "max": 5210192.340153043
-                    },
-                    "logaritmico_r2": {
-                        "count": 9.0,
-                        "mean": 0.4723804814451486,
-                        "std": 0.33010254595619815,
-                        "min": 0.0,
-                        "25%": 0.0521368228680176,
-                        "50%": 0.6648815626512359,
-                        "75%": 0.6837323946756919,
-                        "max": 0.771554950181519
-                    },
-                    "logaritmico_r_m_s_e": {
-                        "count": 9.0,
-                        "mean": 804634.3054912819,
-                        "std": 1600223.952984855,
-                        "min": 0.011607773727143,
-                        "25%": 0.6210834264460852,
-                        "50%": 3.182928744162636,
-                        "75%": 6.573349175736067,
-                        "max": 3834898.266768528
-                    },
-                    "mejor_r2": {
-                        "count": 9.0,
-                        "mean": 0.6699717104705629,
-                        "std": 0.35918013173042324,
-                        "min": 0.0565026522973433,
-                        "25%": 0.715011023723964,
-                        "50%": 0.8195449868058768,
-                        "75%": 0.8861577905563051,
-                        "max": 1.0
-                    }
-                }
-            },
-            "quality": {
-                "null_ratio_per_column": {
-                    "algoritmo": 0.0,
-                    "variable_dependiente": 0.0,
-                    "variable_independiente": 0.0,
-                    "lineal_r2": 0.0,
-                    "lineal_r_m_s_e": 0.0,
-                    "polinomico_r2": 0.0,
-                    "polinomico_r_m_s_e": 0.0,
-                    "exponencial_r2": 0.0,
-                    "exponencial_r_m_s_e": 0.0,
-                    "logaritmico_r2": 0.0,
-                    "logaritmico_r_m_s_e": 0.0,
-                    "mejor_modelo": 0.0,
-                    "mejor_r2": 0.0
-                },
-                "empty_rows_fraction": 0.0,
-                "duplicate_rows": 0,
-                "columns_count": 13,
-                "rows_count": 9,
-                "memory_bytes": 3148
             }
         },
         {
@@ -3981,83 +3913,83 @@
                 "numeric_stats": {
                     "num_muestras": {
                         "count": 3.0,
-                        "mean": 348.0,
-                        "std": 447.32203165057723,
-                        "min": 9.0,
-                        "25%": 94.5,
-                        "50%": 180.0,
-                        "75%": 517.5,
-                        "max": 855.0
+                        "mean": 440.0,
+                        "std": 441.36152981427824,
+                        "min": 20.0,
+                        "25%": 210.0,
+                        "50%": 400.0,
+                        "75%": 650.0,
+                        "max": 900.0
                     },
                     "tiempo_promedio": {
                         "count": 3.0,
-                        "mean": 56.95743300296642,
-                        "std": 91.19955623101927,
-                        "min": 0.9078728093041314,
-                        "25%": 4.340657975938585,
-                        "50%": 7.773443142573039,
-                        "75%": 84.98221309979756,
-                        "max": 162.1909830570221
+                        "mean": 79.49075247446696,
+                        "std": 128.83626729836666,
+                        "min": 1.5954958081245425,
+                        "25%": 5.135177874565125,
+                        "50%": 8.674859941005707,
+                        "75%": 118.43838080763817,
+                        "max": 228.20190167427063
                     },
                     "tiempo_std": {
                         "count": 3.0,
-                        "mean": 4.564984320412989,
-                        "std": 3.0297147588121933,
-                        "min": 1.1074708967876232,
-                        "25%": 3.4696448130914,
-                        "50%": 5.831818729395177,
-                        "75%": 6.293741032225672,
-                        "max": 6.755663335056167
+                        "mean": 7.554729097895501,
+                        "std": 5.044408100831992,
+                        "min": 1.9689381297360828,
+                        "25%": 5.443218852860115,
+                        "50%": 8.917499575984147,
+                        "75%": 10.347624581975209,
+                        "max": 11.777749587966271
                     },
                     "tiempo_mediana": {
                         "count": 3.0,
-                        "mean": 57.45730177561442,
-                        "std": 89.73164350532474,
-                        "min": 5.7220458984375e-06,
-                        "25%": 5.757464528083801,
-                        "50%": 11.514923334121704,
-                        "75%": 86.18594980239868,
-                        "max": 160.85697627067566
+                        "mean": 78.17115906874339,
+                        "std": 127.29207325204165,
+                        "min": 1.0671803951263428,
+                        "25%": 4.709132373332977,
+                        "50%": 8.351084351539612,
+                        "75%": 116.72314840555191,
+                        "max": 225.0952124595642
                     },
                     "tiempo_min": {
                         "count": 3.0,
-                        "mean": 52.16876641909281,
-                        "std": 90.35893150011917,
-                        "min": 4.76837158203125e-07,
-                        "25%": 1.2993812561035156e-05,
-                        "50%": 2.5510787963867188e-05,
-                        "75%": 78.25314939022064,
-                        "max": 156.50627326965332
+                        "mean": 73.65030225118001,
+                        "std": 127.5660495931544,
+                        "min": 1.9073486328125e-06,
+                        "25%": 9.179115295410156e-06,
+                        "50%": 1.6450881958007812e-05,
+                        "75%": 110.4754524230957,
+                        "max": 220.95088839530945
                     },
                     "tiempo_max": {
                         "count": 3.0,
-                        "mean": 65.15054750442506,
-                        "std": 99.98129945857951,
-                        "min": 3.018014907836914,
-                        "25%": 7.483931422233581,
-                        "50%": 11.949847936630247,
-                        "75%": 96.21681380271913,
-                        "max": 180.483779668808
+                        "mean": 95.85330327351888,
+                        "std": 143.1990793157127,
+                        "min": 7.383464097976685,
+                        "25%": 13.246604800224304,
+                        "50%": 19.109745502471924,
+                        "75%": 140.08822286128998,
+                        "max": 261.06670022010803
                     },
                     "coef_variacion": {
                         "count": 3.0,
-                        "mean": 67.05761240453107,
-                        "std": 59.312439520605416,
-                        "min": 4.165252104477998,
-                        "25%": 39.59379467104505,
-                        "50%": 75.0223372376121,
-                        "75%": 98.50379255455759,
-                        "max": 121.98524787150308
+                        "mean": 77.12139634641656,
+                        "std": 63.1656142335357,
+                        "min": 5.161109307834569,
+                        "25%": 53.97907657028559,
+                        "50%": 102.79704383273662,
+                        "75%": 113.10153986570755,
+                        "max": 123.40603589867848
                     },
                     "pct_exito": {
                         "count": 3.0,
-                        "mean": 29.62962962962963,
-                        "std": 27.962349760262036,
+                        "mean": 33.333333333333336,
+                        "std": 28.86751345948129,
                         "min": 0.0,
-                        "25%": 16.666666666666664,
-                        "50%": 33.33333333333333,
-                        "75%": 44.44444444444444,
-                        "max": 55.55555555555556
+                        "25%": 25.0,
+                        "50%": 50.0,
+                        "75%": 50.0,
+                        "max": 50.0
                     },
                     "throughput_promedio": {
                         "count": 0.0,
@@ -4071,12 +4003,12 @@
                     },
                     "intentos_promedio": {
                         "count": 3.0,
-                        "mean": 10094208.444444446,
-                        "std": 4011026.2142912773,
-                        "min": 6375287.666666667,
-                        "25%": 7969117.166666666,
-                        "50%": 9562946.666666666,
-                        "75%": 11953668.833333332,
+                        "mean": 9562938.533333333,
+                        "std": 4140859.3031449364,
+                        "min": 7172198.25,
+                        "25%": 7172212.3,
+                        "50%": 7172226.35,
+                        "75%": 10758308.675,
                         "max": 14344391.0
                     },
                     "tamano_clave": {
@@ -4125,85 +4057,146 @@
             }
         },
         {
-            "filename": "probabilidades.csv",
+            "filename": "modelos_regresion.csv",
             "category": "probabilities",
             "algorithm": null,
-            "rows": 3,
+            "rows": 9,
             "columns": [
                 "algoritmo",
-                "total_ataques",
-                "ataques_exitosos",
-                "ataques_fallidos",
-                "p_xito",
-                "p_fracaso"
+                "variable_dependiente",
+                "variable_independiente",
+                "lineal_r2",
+                "lineal_r_m_s_e",
+                "polinomico_r2",
+                "polinomico_r_m_s_e",
+                "exponencial_r2",
+                "exponencial_r_m_s_e",
+                "logaritmico_r2",
+                "logaritmico_r_m_s_e",
+                "mejor_modelo",
+                "mejor_r2"
             ],
             "schema": {
                 "algoritmo": "string",
-                "total_ataques": "float",
-                "ataques_exitosos": "float",
-                "ataques_fallidos": "float",
-                "p_xito": "float",
-                "p_fracaso": "float"
+                "variable_dependiente": "string",
+                "variable_independiente": "string",
+                "lineal_r2": "float",
+                "lineal_r_m_s_e": "float",
+                "polinomico_r2": "float",
+                "polinomico_r_m_s_e": "float",
+                "exponencial_r2": "float",
+                "exponencial_r_m_s_e": "float",
+                "logaritmico_r2": "float",
+                "logaritmico_r_m_s_e": "float",
+                "mejor_modelo": "string",
+                "mejor_r2": "float"
             },
             "summary": {
                 "nulls": {
                     "algoritmo": 0,
-                    "total_ataques": 0,
-                    "ataques_exitosos": 0,
-                    "ataques_fallidos": 0,
-                    "p_xito": 0,
-                    "p_fracaso": 0
+                    "variable_dependiente": 0,
+                    "variable_independiente": 0,
+                    "lineal_r2": 0,
+                    "lineal_r_m_s_e": 0,
+                    "polinomico_r2": 0,
+                    "polinomico_r_m_s_e": 0,
+                    "exponencial_r2": 0,
+                    "exponencial_r_m_s_e": 0,
+                    "logaritmico_r2": 0,
+                    "logaritmico_r_m_s_e": 0,
+                    "mejor_modelo": 0,
+                    "mejor_r2": 0
                 },
                 "duplicates": 0,
                 "numeric_stats": {
-                    "total_ataques": {
-                        "count": 3.0,
-                        "mean": 348.0,
-                        "std": 447.32203165057723,
-                        "min": 9.0,
-                        "25%": 94.5,
-                        "50%": 180.0,
-                        "75%": 517.5,
-                        "max": 855.0
+                    "lineal_r2": {
+                        "count": 9.0,
+                        "mean": 0.4123257382290317,
+                        "std": 0.34195806548358876,
+                        "min": 0.0015857892640097,
+                        "25%": 0.1726420220404889,
+                        "50%": 0.5020862456139799,
+                        "75%": 0.6259843015578473,
+                        "max": 1.0
                     },
-                    "ataques_exitosos": {
-                        "count": 3.0,
-                        "mean": 34.333333333333336,
-                        "std": 56.88878038184096,
+                    "lineal_r_m_s_e": {
+                        "count": 9.0,
+                        "mean": 1061002.7521196369,
+                        "std": 2110216.4965457176,
                         "min": 0.0,
-                        "25%": 1.5,
-                        "50%": 3.0,
-                        "75%": 51.5,
-                        "max": 100.0
+                        "25%": 1.7886907089965698,
+                        "50%": 5.315569680069159,
+                        "75%": 11.761867547158062,
+                        "max": 5060914.662333551
                     },
-                    "ataques_fallidos": {
-                        "count": 3.0,
-                        "mean": 313.6666666666667,
-                        "std": 470.2662366504035,
-                        "min": 6.0,
-                        "25%": 43.0,
-                        "50%": 80.0,
-                        "75%": 467.5,
-                        "max": 855.0
+                    "polinomico_r2": {
+                        "count": 9.0,
+                        "mean": 0.5011588001006084,
+                        "std": 0.33845500681813917,
+                        "min": 0.0666618018402097,
+                        "25%": 0.2798952836328874,
+                        "50%": 0.5625540789124182,
+                        "75%": 0.7568975755311909,
+                        "max": 1.0
                     },
-                    "p_xito": {
-                        "count": 3.0,
-                        "mean": 0.2962962962962963,
-                        "std": 0.27962349760262034,
+                    "polinomico_r_m_s_e": {
+                        "count": 9.0,
+                        "mean": 932667.012031982,
+                        "std": 1870770.769751491,
                         "min": 0.0,
-                        "25%": 0.16666666666666666,
-                        "50%": 0.3333333333333333,
-                        "75%": 0.4444444444444444,
-                        "max": 0.5555555555555556
+                        "25%": 1.6687310591906737,
+                        "50%": 4.285480714708701,
+                        "75%": 11.372093654378896,
+                        "max": 4743666.385904599
                     },
-                    "p_fracaso": {
-                        "count": 3.0,
-                        "mean": 0.7037037037037037,
-                        "std": 0.27962349760262034,
-                        "min": 0.4444444444444444,
-                        "25%": 0.5555555555555556,
-                        "50%": 0.6666666666666666,
-                        "75%": 0.8333333333333333,
+                    "exponencial_r2": {
+                        "count": 9.0,
+                        "mean": 0.22826196908862015,
+                        "std": 0.22223891242318905,
+                        "min": 0.0,
+                        "25%": 0.0015714995484593,
+                        "50%": 0.1158552462921548,
+                        "75%": 0.4743532045815578,
+                        "max": 0.4872172382946216
+                    },
+                    "exponencial_r_m_s_e": {
+                        "count": 9.0,
+                        "mean": 1209942.2318302174,
+                        "std": 2404011.25864222,
+                        "min": 0.0575403222821645,
+                        "25%": 1.849056615153312,
+                        "50%": 6.224029014192017,
+                        "75%": 11.761951717204122,
+                        "max": 5689513.181588237
+                    },
+                    "logaritmico_r2": {
+                        "count": 9.0,
+                        "mean": 0.33414428450097705,
+                        "std": 0.3101387499485815,
+                        "min": 0.0,
+                        "25%": 3.593424607317708e-06,
+                        "50%": 0.2121361520366053,
+                        "75%": 0.6711988807272187,
+                        "max": 0.6880940009973705
+                    },
+                    "logaritmico_r_m_s_e": {
+                        "count": 9.0,
+                        "mean": 1000010.9354447054,
+                        "std": 1993757.6709565152,
+                        "min": 0.0153371174333572,
+                        "25%": 1.745476909636771,
+                        "50%": 4.854189917901619,
+                        "75%": 11.771183425699242,
+                        "max": 4887457.651911537
+                    },
+                    "mejor_r2": {
+                        "count": 9.0,
+                        "mean": 0.5011588001006084,
+                        "std": 0.33845500681813917,
+                        "min": 0.0666618018402097,
+                        "25%": 0.2798952836328874,
+                        "50%": 0.5625540789124182,
+                        "75%": 0.7568975755311909,
                         "max": 1.0
                     }
                 }
@@ -4211,17 +4204,24 @@
             "quality": {
                 "null_ratio_per_column": {
                     "algoritmo": 0.0,
-                    "total_ataques": 0.0,
-                    "ataques_exitosos": 0.0,
-                    "ataques_fallidos": 0.0,
-                    "p_xito": 0.0,
-                    "p_fracaso": 0.0
+                    "variable_dependiente": 0.0,
+                    "variable_independiente": 0.0,
+                    "lineal_r2": 0.0,
+                    "lineal_r_m_s_e": 0.0,
+                    "polinomico_r2": 0.0,
+                    "polinomico_r_m_s_e": 0.0,
+                    "exponencial_r2": 0.0,
+                    "exponencial_r_m_s_e": 0.0,
+                    "logaritmico_r2": 0.0,
+                    "logaritmico_r_m_s_e": 0.0,
+                    "mejor_modelo": 0.0,
+                    "mejor_r2": 0.0
                 },
                 "empty_rows_fraction": 0.0,
                 "duplicate_rows": 0,
-                "columns_count": 6,
-                "rows_count": 3,
-                "memory_bytes": 408
+                "columns_count": 13,
+                "rows_count": 9,
+                "memory_bytes": 3148
             }
         },
         {
@@ -5525,7 +5525,7 @@
     ],
     "aggregate": {
         "total_files": 38,
-        "total_records": 3857,
+        "total_records": 5382,
         "unique_columns_count": 143,
         "numeric_columns_estimate": 268,
         "categorical_columns_estimate": 118
@@ -5576,7 +5576,7 @@
         "largest_files": [
             {
                 "filename": "integrated_analysis_df.csv",
-                "rows": 1899
+                "rows": 3320
             },
             {
                 "filename": "all_algorithms_metrics_refined.csv",
@@ -5612,7 +5612,7 @@
             },
             {
                 "filename": "all_attack_results.csv",
-                "rows": 36
+                "rows": 69
             }
         ]
     }
