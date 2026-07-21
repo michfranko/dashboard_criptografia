@@ -8,6 +8,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -184,27 +185,37 @@ export default function ForceBruteView() {
     ];
   }, [activeTab, selectedStat]);
 
-  const complexityData = useMemo(() => {
-    const grouped = new Map<number, { log2: number; time: number[]; attempts: number[] }>();
+  const complexityBarData = useMemo(() => {
+    const grouped = new Map<string, { key: number; algo: string; times: number[]; attempts: number[] }>();
 
     selectedRows.forEach((row) => {
-      const log2 = parseNumber(row.log2_search_space);
+      const key = parseNumber(row.key_size_bits);
+      const algo = String(row.algoritmo ?? "DESCONOCIDO");
       const time = parseNumber(row.attack_time_seconds) || parseNumber(row.execution_time);
       const attempts = parseNumber(row.attempts);
-      if (!grouped.has(log2)) grouped.set(log2, { log2, time: [], attempts: [] });
-      const bucket = grouped.get(log2)!;
-      if (time > 0) bucket.time.push(time);
+      const groupKey = `${key}-${algo}`;
+      if (!grouped.has(groupKey)) grouped.set(groupKey, { key, algo, times: [], attempts: [] });
+      const bucket = grouped.get(groupKey)!;
+      if (time > 0) bucket.times.push(time);
       if (attempts > 0) bucket.attempts.push(attempts);
     });
 
     return Array.from(grouped.values())
       .map((item) => ({
-        log2: item.log2,
-        tiempoPromedio: item.time.length ? item.time.reduce((acc, value) => acc + value, 0) / item.time.length : 0,
-        intentosPromedio: item.attempts.length ? item.attempts.reduce((acc, value) => acc + value, 0) / item.attempts.length : 0,
+        key: item.key,
+        algo: item.algo,
+        tiempoPromedio: item.times.length ? item.times.reduce((acc, v) => acc + v, 0) / item.times.length : 0,
+        intentosPromedio: item.attempts.length ? item.attempts.reduce((acc, v) => acc + v, 0) / item.attempts.length : 0,
       }))
-      .sort((a, b) => a.log2 - b.log2);
+      .sort((a, b) => a.key - b.key || a.algo.localeCompare(b.algo));
   }, [selectedRows]);
+
+  const algorithmColorMap: Record<string, string> = {
+    "AES": "#38bdf8",
+    "RSA": "#a855f7",
+    "MD5": "#f59e0b",
+    "SHA-256": "#10b981",
+  };
 
   const evolutionData = useMemo(() => {
     return selectedRows
@@ -363,19 +374,37 @@ export default function ForceBruteView() {
 
       <div className="mt-6 space-y-6">
         <div className="grid gap-6 xl:grid-cols-2">
-          <VisualPanel title="Complejidad temporal" subtitle="Curva principal de resistencia frente a la dimensión de búsqueda">
+          <VisualPanel title="Complejidad temporal" subtitle="Tiempo promedio de ataque por tamaño de clave y algoritmo">
             <div className="mt-4 h-[320px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={complexityData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <BarChart data={complexityBarData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="log2" stroke="#94a3b8" fontSize={11} />
+                  <XAxis dataKey="key" stroke="#94a3b8" fontSize={11} tickFormatter={(v) => `${v} bits`} />
                   <YAxis stroke="#94a3b8" fontSize={11} />
-                  <Tooltip {...customTooltipStyle} formatter={(value) => [`${formatMetric(Number(value), 3)} s`, "Tiempo medio"]} />
-                  <Line type="monotone" dataKey="tiempoPromedio" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
-                </LineChart>
+                  <Tooltip
+                    {...customTooltipStyle}
+                    formatter={(value, name) => {
+                      if (name === "tiempoPromedio") return [`${formatMetric(Number(value), 3)} s`, "Tiempo medio"];
+                      return [value, name];
+                    }}
+                    labelFormatter={(label) => `${label} bits`}
+                  />
+                  <Bar dataKey="tiempoPromedio" radius={[4, 4, 0, 0]}>
+                    {complexityBarData.map((entry, index) => (
+                      <Cell key={index} fill={algorithmColorMap[entry.algo] ?? "#f43f5e"} />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
+              <div className="mt-2 flex flex-wrap justify-center gap-4 text-xs text-slate-400">
+                {Object.entries(algorithmColorMap).map(([algo, color]) => (
+                  <span key={algo} className="flex items-center gap-1">
+                    <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
+                    {algo}
+                  </span>
+                ))}
+              </div>
             </div>
-            <p className="mt-3 text-xs uppercase tracking-[0.25em] text-slate-500">Fuente: RESULTADOS_GLOBALES.datasets[0].data · variables: log2_search_space, attack_time_seconds</p>
           </VisualPanel>
 
           <VisualPanel title="Evolución del ataque" subtitle="Intentos acumulados frente al tiempo observado">
@@ -390,7 +419,6 @@ export default function ForceBruteView() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <p className="mt-3 text-xs uppercase tracking-[0.25em] text-slate-500">Fuente: RESULTADOS_GLOBALES.datasets[0].data · variables: attempts, attack_time_seconds</p>
           </VisualPanel>
         </div>
 
@@ -408,7 +436,6 @@ export default function ForceBruteView() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className="mt-3 text-xs uppercase tracking-[0.25em] text-slate-500">Fuente: RESULTADOS_GLOBALES.datasets[1].data · variables: successful_attacks, failed_attacks</p>
           </VisualPanel>
 
           <VisualPanel title="Comparación entre algoritmos" subtitle="Tiempo medio, intentos, velocidad y tasa de éxito del conjunto de comparación">
@@ -424,7 +451,6 @@ export default function ForceBruteView() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className="mt-3 text-xs uppercase tracking-[0.25em] text-slate-500">Fuente: RESULTADOS_GLOBALES.datasets[2].data · variables: average_time, average_attempts, average_attempts_per_second, success_rate</p>
           </VisualPanel>
         </div>
 
