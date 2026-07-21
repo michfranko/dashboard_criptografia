@@ -253,7 +253,7 @@ export default function AlgoritmosPage() {
         const b = Number(r.data_size_bytes);
         if (!groups[b]) groups[b] = { bytes: b, totalTime: 0, count: 0 };
         groups[b].totalTime += Number(r.execution_time);
-        groups[b].count++;
+        groups[b].count++;  
       });
       return Object.values(groups)
         .map((g: any) => ({
