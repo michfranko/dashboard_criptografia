@@ -319,6 +319,21 @@ export default function SimulacionPage() {
   // Handlers
   // ────────────────────────────────────────────────────────────────────────────
 
+  const guardarCifradoEnJSON = async (datosCifrado: any) => {
+    try {
+      const response = await fetch('/api/guardar-cifrado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosCifrado),
+      });
+      if (response.ok) {
+        console.log("¡Cifrado guardado en algorithms.json exitosamente!");
+      }
+    } catch (error) {
+      console.error("Error de conexión con la API de cifrado:", error);
+    }
+  };
+
   const executeCrypto = async () => {
     if (!input) return;
     if (algorithm === "aes") {
@@ -532,6 +547,21 @@ export default function SimulacionPage() {
           successProbability: "1.0",
         });
         refreshHistory();
+
+        await guardarCifradoEnJSON({
+          attack_id: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          algorithm: algorithm === "aes" ? "AES-256" : algorithm === "md5" ? "MD5" : algorithm === "sha256" ? "SHA-256" : "RSA",
+          categoria: algorithm === "aes" ? "Cifrado Simétrico" : algorithm === "rsa" ? "Cifrado Asimétrico" : "Hashing",
+          origin: "USER_DATA",
+          data_size_bytes: inputBytes,
+          original_text: input,
+          target_value: ciphertext,
+          execution_time_crypto: opResult.durationMs,
+          key_size_bits: keyBits,
+          hash_length_crypto: algorithm === "md5" ? 128 : algorithm === "sha256" ? 256 : null,
+          throughput_crypto: +(inputBytes / (opResult.durationMs / 1000 || 0.001)).toFixed(2)
+        });
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Error fatal.");
@@ -739,6 +769,24 @@ export default function SimulacionPage() {
 
   // ── Start attack ──────────────────────────────────────────────────────────
 
+  const guardarResultadoEnJSON = async (datosParaGuardar: any) => {
+    try {
+      const response = await fetch('/api/guardar-ataque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaGuardar),
+      });
+
+      if (response.ok) {
+        console.log("¡Los datos se guardaron en attacks.json exitosamente!");
+      } else {
+        console.error("Hubo un problema al guardar en el JSON físico.");
+      }
+    } catch (error) {
+      console.error("Error de conexión con la API:", error);
+    }
+  };
+
   const startAttack = async () => {
     const session = SessionManager.get();
     if (!session) {
@@ -901,6 +949,28 @@ export default function SimulacionPage() {
         successProbability: "0",
       });
       refreshHistory();
+
+      await guardarResultadoEnJSON({
+        attack_id: crypto.randomUUID(), 
+        timestamp: new Date().toISOString(),
+        algoritmo: algorithm.toUpperCase(), // Se enviará "AES", "MD5", "RSA" o "SHA256"
+        attack_type: attackStrategy,
+        target_id: crypto.randomUUID().replace(/-/g, ''), // Un ID de objetivo simulado
+        original_text: session.originalText,
+        target_value: session.ciphertext,
+        recovered_text: attack.recoveredPlaintext || attack.foundCandidate || null,
+        attack_successful: attack.found,
+        error_message: attack.found ? null : "Password not found in search space",
+        execution_time: attack.elapsedMs,
+        attack_time_seconds: attack.elapsedMs / 1000,
+        attempts: attack.attempts,
+        throughput: attack.speedPerSecond,
+        attempts_per_second: attack.speedPerSecond,
+        key_size_bits: keyBits,
+        search_space: attack.searchSize,
+        plaintext_length: session.originalText.length,
+        ciphertext_length: session.ciphertextBytes
+      });
     } catch (cause) {
       setAttackError(cause instanceof Error ? cause.message : "Error inesperado.");
     } finally {
